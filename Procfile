@@ -1,1 +1,1 @@
-web: npm install --legacy-peer-deps && (cd client && npm install --legacy-peer-deps --no-save && CI=false ./node_modules/.bin/react-scripts build) && node server.js 
+web: npm install --legacy-peer-deps && npm run build && NODE_ENV=production node server.js 

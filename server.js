@@ -11,8 +11,12 @@ const app = express();
 
 // CORS middleware - update for production
 const allowedOrigins = process.env.NODE_ENV === 'production' 
-  ? [process.env.FRONTEND_URL || 'https://your-app-name.onrender.com'] 
+  ? [process.env.FRONTEND_URL] 
   : ['http://localhost:3000', 'http://localhost:3001'];
+
+if (!process.env.FRONTEND_URL && process.env.NODE_ENV === 'production') {
+  console.warn('Warning: FRONTEND_URL environment variable is not set in production');
+}
 
 app.use(cors({
   origin: allowedOrigins,
@@ -36,7 +40,15 @@ if (process.env.NODE_ENV !== 'production') {
 // MongoDB Connection with retry logic
 const connectDB = async () => {
   try {
-    const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/food-safety';
+    if (!process.env.MONGODB_URI && process.env.NODE_ENV === 'production') {
+      throw new Error('MONGODB_URI environment variable is required in production');
+    }
+    
+    const MONGODB_URI = process.env.MONGODB_URI;
+    if (!MONGODB_URI) {
+      throw new Error('MONGODB_URI is not defined');
+    }
+
     await mongoose.connect(MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -46,8 +58,13 @@ const connectDB = async () => {
     console.log('MongoDB Connected');
   } catch (err) {
     console.error('MongoDB Connection Error:', err);
-    // Retry connection after 5 seconds
-    setTimeout(connectDB, 5000);
+    if (process.env.NODE_ENV === 'production') {
+      // In production, exit if we can't connect to the database
+      process.exit(1);
+    } else {
+      // In development, retry connection after 5 seconds
+      setTimeout(connectDB, 5000);
+    }
   }
 };
 
@@ -88,11 +105,18 @@ if (process.env.NODE_ENV === 'production') {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({
+  const statusCode = err.statusCode || 500;
+  res.status(statusCode).json({
     message: process.env.NODE_ENV === 'production' 
       ? 'Internal server error' 
-      : err.message
+      : err.message,
+    stack: process.env.NODE_ENV === 'production' ? undefined : err.stack
   });
+});
+
+// Add a health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', environment: process.env.NODE_ENV });
 });
 
 const PORT = process.env.PORT || 5001;

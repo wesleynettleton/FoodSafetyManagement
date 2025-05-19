@@ -3,13 +3,17 @@
   "version": "1.0.0",
   "description": "Food Safety Management System",
   "main": "server.js",
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon --config nodemon.json server.js",
     "client": "cd client && npm start",
     "dev:full": "concurrently \"npm run dev\" \"npm run client\"",
-    "build": "cd client && npm install && npm run build",
-    "install-all": "npm install && cd client && npm install"
+    "build": "cd client && npm install --legacy-peer-deps && CI=false npm run build",
+    "install-all": "npm install --legacy-peer-deps && cd client && npm install --legacy-peer-deps",
+    "postinstall": "cd client && npm install --legacy-peer-deps"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

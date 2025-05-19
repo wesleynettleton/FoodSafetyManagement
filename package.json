@@ -12,7 +12,7 @@
     "client": "cd client && npm start",
     "dev:full": "concurrently \"npm run dev\" \"npm run client\"",
     "install-all": "npm install --legacy-peer-deps && cd client && npm install --legacy-peer-deps --no-save",
-    "build": "cd client && npm install --legacy-peer-deps && npm audit fix --force && CI=false npm run build && cd ..",
+    "build": "cd client && npm install --legacy-peer-deps && npm audit fix --force && npm run build && cd ..",
     "heroku-postbuild": "npm run build"
   },
   "dependencies": {

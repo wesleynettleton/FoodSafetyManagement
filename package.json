@@ -11,9 +11,7 @@
     "dev": "nodemon --config nodemon.json server.js",
     "client": "cd client && npm start",
     "dev:full": "concurrently \"npm run dev\" \"npm run client\"",
-    "build": "cd client && CI=false npm run build",
-    "install-all": "npm install --legacy-peer-deps && cd client && npm install --legacy-peer-deps --no-save",
-    "install-client": "cd client && npm install --legacy-peer-deps --no-save"
+    "install-all": "npm install --legacy-peer-deps && cd client && npm install --legacy-peer-deps --no-save"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

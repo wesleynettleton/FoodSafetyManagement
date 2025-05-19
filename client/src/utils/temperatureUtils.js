@@ -56,6 +56,13 @@ export const getTemperatureStatus = (record) => {
       : { status: 'danger', color: 'error.main' };
   }
 
+  // Delivery temperature logic: safe if <= 8°C
+  if (record.type === 'delivery') {
+    return record.temperature <= 8
+      ? { status: 'safe', color: 'success.main' }
+      : { status: 'danger', color: 'error.main' };
+  }
+
   return { status: 'unknown', color: 'text.secondary' };
 };
 

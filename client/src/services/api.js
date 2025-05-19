@@ -1,0 +1,131 @@
+import axios from 'axios';
+
+// Create axios instance with default config
+const api = axios.create({
+  baseURL: 'http://localhost:5001/api',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Request interceptor
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    console.log('Making request:', {
+      method: config.method,
+      url: config.url,
+      headers: config.headers,
+      data: config.data
+    });
+    return config;
+  },
+  (error) => {
+    console.error('Request error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor
+api.interceptors.response.use(
+  (response) => {
+    console.log('Response received:', {
+      status: response.status,
+      data: response.data,
+      headers: response.headers
+    });
+    return response;
+  },
+  (error) => {
+    if (error.response) {
+      console.error('API Error:', {
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+    } else if (error.request) {
+      console.error('No response received:', error.request);
+    } else {
+      console.error('Error setting up request:', error.message);
+    }
+    
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Auth API
+export const authAPI = {
+  login: (credentials) => api.post('/auth/login', credentials),
+  register: (userData) => api.post('/auth/register', userData),
+  getCurrentUser: () => api.get('/auth/user')
+};
+
+// Users API
+export const usersAPI = {
+  getAll: () => api.get('/users'),
+  getById: (id) => api.get(`/users/${id}`),
+  create: (userData) => api.post('/users', userData),
+  update: (id, userData) => api.put(`/users/${id}`, userData),
+  delete: (id) => api.delete(`/users/${id}`)
+};
+
+// Locations API
+export const locationsAPI = {
+  getAll: () => api.get('/locations'),
+  getById: (id) => api.get(`/locations/${id}`),
+  create: (locationData) => api.post('/locations', locationData),
+  update: (id, locationData) => api.put(`/locations/${id}`, locationData),
+  delete: (id) => api.delete(`/locations/${id}`)
+};
+
+// Records API
+export const recordsAPI = {
+  // Food Temperature Records
+  createFoodTemperature: (data) => api.post('/records/food-temperature', data),
+  getFoodTemperatures: () => api.get('/records/food-temperature'),
+  getByType: (type) => api.get(`/records/${type}`),
+  getRecordsByTypeAndLocation: (type, locationId) => api.get(`/records/admin/${type}/${locationId}`),
+
+  // Probe Calibration Records
+  createProbeCalibration: (data) => api.post('/records/probe-calibration', data),
+  getProbeCalibrations: () => api.get('/records/probe-calibration'),
+
+  // Delivery Records
+  createDelivery: (data) => api.post('/records/delivery', data),
+  getDeliveries: () => api.get('/records/delivery'),
+
+  // Temperature Records
+  createTemperature: (data) => api.post('/records/temperature', {
+    temperature: data.temperature,
+    equipmentType: data.equipmentType,
+    equipmentId: data.equipment,
+    note: data.note
+  }),
+  getTemperatures: () => api.get('/records/temperature?populate=equipment'),
+  deleteTemperatures: () => api.delete('/records/temperature/all'),
+
+  // Generic record operations
+  getAll: () => api.get('/records'),
+  getById: (id) => api.get(`/records/${id}`),
+  create: (recordData) => api.post('/records', recordData),
+  update: (id, recordData) => api.put(`/records/${id}`, recordData),
+  delete: (id) => api.delete(`/records/${id}`)
+};
+
+// Equipment API
+export const equipmentAPI = {
+  getAll: () => api.get('/equipment'),
+  getById: (id) => api.get(`/equipment/${id}`),
+  create: (data) => api.post('/equipment', data),
+  update: (id, data) => api.put(`/equipment/${id}`, data),
+  delete: (id) => api.delete(`/equipment/${id}`)
+};
+
+export default api;

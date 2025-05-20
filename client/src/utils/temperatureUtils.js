@@ -208,7 +208,7 @@ export const TemperatureCell = ({ record }) => {
           }}
         >
           {getTemperatureLabel(record)}
-          {status !== 'safe' && record.type !== 'probe_calibration' && (
+          {(status === 'warning' || status === 'danger') && record.type !== 'probe_calibration' && (
             <WarningIcon 
               sx={{ 
                 fontSize: 16, 

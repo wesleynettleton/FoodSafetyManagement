@@ -16,6 +16,14 @@ import {
   Grid,
   Badge,
   Tooltip,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  FormControl,
+  InputLabel,
+  Select,
+  Divider
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
@@ -23,10 +31,11 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   CheckCircle as CheckCircleIcon,
+  Add as AddIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 import { format } from 'date-fns';
-import { useAuth } from '../contexts/AuthContext';
+import { useSelector } from 'react-redux';
 
 const priorityColors = {
   low: 'success',
@@ -43,7 +52,7 @@ const CommunicationsHub = () => {
     content: '',
     priority: 'medium',
   });
-  const { user } = useAuth();
+  const { user } = useSelector((state) => state.auth);
   const isAdmin = user?.role === 'admin';
 
   useEffect(() => {

@@ -335,6 +335,12 @@ router.get('/', auth, async (req, res) => {
                 createdBy: user.id 
             }).populate('createdBy', 'name').sort({ createdAt: -1 });
             console.log('Delivery records found:', deliveries.length);
+
+            const coolingTemps = await CoolingTemperature.find({ 
+                location: user.siteLocation,
+                createdBy: user.id 
+            }).populate('createdBy', 'name').sort({ createdAt: -1 });
+            console.log('Cooling temperature records found:', coolingTemps.length);
             
             // First, migrate any temperature records that still use equipmentId
             const tempsToMigrate = await TemperatureRecord.find({ 
@@ -365,7 +371,7 @@ router.get('/', auth, async (req, res) => {
               .sort({ createdAt: -1 });
             console.log('Temperature records found:', temps.length);
 
-            allRecords = [...foodTemps, ...probeCals, ...deliveries, ...temps];
+            allRecords = [...foodTemps, ...probeCals, ...deliveries, ...coolingTemps, ...temps];
         } else {
             // For admin, show all records for their location
             console.log('Fetching all records for location:', user.siteLocation);
@@ -384,6 +390,11 @@ router.get('/', auth, async (req, res) => {
                 .populate('createdBy', 'name')
                 .sort({ createdAt: -1 });
             console.log('Delivery records found:', deliveries.length);
+
+            const coolingTemps = await CoolingTemperature.find({ location: user.siteLocation })
+                .populate('createdBy', 'name')
+                .sort({ createdAt: -1 });
+            console.log('Cooling temperature records found:', coolingTemps.length);
             
             // First, migrate any temperature records that still use equipmentId
             const tempsToMigrate = await TemperatureRecord.find({ 
@@ -411,7 +422,7 @@ router.get('/', auth, async (req, res) => {
                 .sort({ createdAt: -1 });
             console.log('Temperature records found:', temps.length);
 
-            allRecords = [...foodTemps, ...probeCals, ...deliveries, ...temps];
+            allRecords = [...foodTemps, ...probeCals, ...deliveries, ...coolingTemps, ...temps];
         }
 
         // For any records that still have equipmentId, populate them manually
@@ -438,6 +449,7 @@ router.get('/', auth, async (req, res) => {
             foodTemps: allRecords.filter(r => r.type === 'food_temperature').length,
             probeCals: allRecords.filter(r => r.type === 'probe_calibration').length,
             deliveries: allRecords.filter(r => r.type === 'delivery').length,
+            coolingTemps: allRecords.filter(r => r.type === 'cooling_temperature').length,
             temps: allRecords.filter(r => r.type === 'fridge_temperature' || r.type === 'freezer_temperature').length
         });
 

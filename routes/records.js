@@ -399,7 +399,6 @@ router.get('/', auth, async (req, res) => {
             // First, migrate any temperature records that still use equipmentId
             const tempsToMigrate = await TemperatureRecord.find({ 
                 location: user.siteLocation,
-                createdBy: user.id,
                 equipmentId: { $exists: true }
             });
 

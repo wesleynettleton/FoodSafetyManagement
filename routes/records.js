@@ -373,32 +373,35 @@ router.get('/', auth, async (req, res) => {
 
             allRecords = [...foodTemps, ...probeCals, ...deliveries, ...coolingTemps, ...temps];
         } else {
-            // For admin, show all records for their location
-            console.log('Fetching all records for location:', user.siteLocation);
+            // For admin, show all records from all locations
+            console.log('Fetching all records for all locations');
             
-            const foodTemps = await FoodTemperature.find({ location: user.siteLocation })
+            const foodTemps = await FoodTemperature.find()
                 .populate('createdBy', 'name')
+                .populate('location', 'name')
                 .sort({ createdAt: -1 });
             console.log('Food temperature records found:', foodTemps.length);
             
-            const probeCals = await ProbeCalibration.find({ location: user.siteLocation })
+            const probeCals = await ProbeCalibration.find()
                 .populate('createdBy', 'name')
+                .populate('location', 'name')
                 .sort({ createdAt: -1 });
             console.log('Probe calibration records found:', probeCals.length);
             
-            const deliveries = await Delivery.find({ location: user.siteLocation })
+            const deliveries = await Delivery.find()
                 .populate('createdBy', 'name')
+                .populate('location', 'name')
                 .sort({ createdAt: -1 });
             console.log('Delivery records found:', deliveries.length);
 
-            const coolingTemps = await CoolingTemperature.find({ location: user.siteLocation })
+            const coolingTemps = await CoolingTemperature.find()
                 .populate('createdBy', 'name')
+                .populate('location', 'name')
                 .sort({ createdAt: -1 });
             console.log('Cooling temperature records found:', coolingTemps.length);
             
             // First, migrate any temperature records that still use equipmentId
             const tempsToMigrate = await TemperatureRecord.find({ 
-                location: user.siteLocation,
                 equipmentId: { $exists: true }
             });
 
@@ -412,8 +415,9 @@ router.get('/', auth, async (req, res) => {
                 }
             }
             
-            const temps = await TemperatureRecord.find({ location: user.siteLocation })
+            const temps = await TemperatureRecord.find()
                 .populate('createdBy', 'name')
+                .populate('location', 'name')
                 .populate({
                     path: 'equipment',
                     select: 'name type',

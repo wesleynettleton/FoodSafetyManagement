@@ -399,6 +399,7 @@ router.get('/', auth, async (req, res) => {
             // First, migrate any temperature records that still use equipmentId
             const tempsToMigrate = await TemperatureRecord.find({ 
                 location: user.siteLocation,
+                createdBy: user.id,
                 equipmentId: { $exists: true }
             });
 
@@ -492,6 +493,9 @@ router.get('/admin/:type/:locationId', auth, async (req, res) => {
             case 'delivery':
                 Model = Delivery;
                 break;
+            case 'cooling-temperature':
+                Model = CoolingTemperature;
+                break;
             case 'temperature':
             case 'fridge_temperature':
             case 'freezer_temperature':
@@ -523,6 +527,7 @@ router.delete('/all', auth, async (req, res) => {
         await ProbeCalibration.deleteMany({ location: user.siteLocation });
         await Delivery.deleteMany({ location: user.siteLocation });
         await TemperatureRecord.deleteMany({ location: user.siteLocation });
+        await CoolingTemperature.deleteMany({ location: user.siteLocation });
 
         res.json({ msg: 'All records deleted successfully' });
     } catch (err) {
@@ -551,6 +556,9 @@ router.delete('/:type/all', auth, async (req, res) => {
                 break;
             case 'temperature':
                 Model = TemperatureRecord;
+                break;
+            case 'cooling-temperature':
+                Model = CoolingTemperature;
                 break;
             default:
                 return res.status(400).json({ msg: 'Invalid record type' });
@@ -594,6 +602,10 @@ router.delete('/:id', auth, async (req, res) => {
         if (!record) {
             record = await TemperatureRecord.findById(recordId);
             Model = TemperatureRecord;
+        }
+        if (!record) {
+            record = await CoolingTemperature.findById(recordId);
+            Model = CoolingTemperature;
         }
 
         if (!record) {

@@ -8,7 +8,8 @@ import {
   CardContent,
   CardActions,
   Button,
-  Box
+  Box,
+  Divider
 } from '@mui/material';
 import {
   ListAlt as ListAltIcon,
@@ -21,6 +22,7 @@ import {
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
 import Logo from '../components/Logo';
+import CommunicationsHub from '../components/CommunicationsHub';
 
 const KitchenStaffDashboard = () => {
   const { user } = useSelector((state) => state.auth);
@@ -99,6 +101,14 @@ const KitchenStaffDashboard = () => {
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
         Welcome, {user?.name || 'Staff Member'}! Access your tools and log records below.
       </Typography>
+
+      {/* Communications Hub */}
+      <Box sx={{ mb: 4 }}>
+        <CommunicationsHub />
+      </Box>
+
+      <Divider sx={{ my: 4 }} />
+
       <Grid container spacing={3}>
         {menuItems.map((item) => (
           <Grid item xs={12} sm={6} md={4} key={item.title}>

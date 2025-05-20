@@ -8,7 +8,8 @@ import {
   CardContent,
   CardActions,
   Button,
-  Box
+  Box,
+  Divider
 } from '@mui/material';
 import {
   People as PeopleIcon,
@@ -18,6 +19,7 @@ import {
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
 import Logo from '../components/Logo';
+import CommunicationsHub from '../components/CommunicationsHub';
 
 const AdminDashboard = () => {
   const { user } = useSelector((state) => state.auth);
@@ -66,6 +68,14 @@ const AdminDashboard = () => {
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
         Welcome to the Food Safety Management System. Use the options below to manage your system.
       </Typography>
+
+      {/* Communications Hub */}
+      <Box sx={{ mb: 4 }}>
+        <CommunicationsHub />
+      </Box>
+
+      <Divider sx={{ my: 4 }} />
+
       <Grid container spacing={3}>
         {menuItems.map((item) => (
           <Grid item xs={12} sm={6} md={4} key={item.title}>

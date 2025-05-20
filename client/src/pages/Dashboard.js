@@ -5,13 +5,15 @@ import {
   Grid,
   Paper,
   Typography,
-  Box
+  Box,
+  Divider
 } from '@mui/material';
 import {
   People as PeopleIcon,
   LocationOn as LocationIcon,
   Assignment as RecordsIcon
 } from '@mui/icons-material';
+import CommunicationsHub from '../components/CommunicationsHub';
 
 const Dashboard = () => {
   const { user } = useSelector((state) => state.auth);
@@ -47,6 +49,17 @@ const Dashboard = () => {
       </Typography>
       <Typography variant="subtitle1" color="text.secondary" gutterBottom>
         {user?.role === 'admin' ? 'Administrator Dashboard' : 'Kitchen Staff Dashboard'}
+      </Typography>
+
+      {/* Communications Hub */}
+      <Box sx={{ mb: 4 }}>
+        <CommunicationsHub />
+      </Box>
+
+      <Divider sx={{ my: 4 }} />
+      
+      <Typography variant="h5" gutterBottom>
+        Quick Access
       </Typography>
       
       <Grid container spacing={3} sx={{ mt: 2 }}>

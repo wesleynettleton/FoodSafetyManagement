@@ -83,6 +83,7 @@ const users = require('./routes/users');
 const records = require('./routes/records');
 const equipment = require('./routes/equipment');
 const locations = require('./routes/locations');
+const communications = require('./routes/communications');
 
 // Define Routes
 app.use('/api/users', users);
@@ -90,6 +91,7 @@ app.use('/api/auth', auth);
 app.use('/api/records', records);
 app.use('/api/equipment', equipment);
 app.use('/api/locations', locations);
+app.use('/api/communications', communications);
 
 // Serve static files from the React build directory
 const buildPath = path.join(__dirname, 'client/build');

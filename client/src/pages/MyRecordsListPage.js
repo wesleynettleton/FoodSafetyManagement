@@ -33,7 +33,8 @@ import {
   ArrowBack as ArrowBackIcon,
   Warning as WarningIcon,
   Restaurant as RestaurantIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  Timer as TimerIcon
 } from '@mui/icons-material';
 import { recordsAPI } from '../services/api';
 import { useSelector } from 'react-redux';
@@ -42,6 +43,7 @@ import { useNavigate } from 'react-router-dom';
 const recordTypeFilters = [
   { value: 'all', label: 'All Records', icon: <AllIcon />, color: 'default' },
   { value: 'food_temperature', label: 'Food Temp', icon: <RestaurantIcon />, color: 'error' },
+  { value: 'cooling_temperature', label: 'Cooling', icon: <TimerIcon />, color: 'warning' },
   { value: 'probe_calibration', label: 'Probe Cal.', icon: <BuildIcon />, color: 'warning' },
   { value: 'delivery', label: 'Delivery', icon: <LocalShippingIcon />, color: 'info' },
   { value: 'equipment_temperature', label: 'Equip. Temp', icon: <ThermostatIcon />, color: 'success' }
@@ -127,6 +129,11 @@ const getRecordTypeDetails = (record) => {
     typeDisplay: 'Food Temperature', 
     icon: <RestaurantIcon />,
     color: 'error'
+  };
+  if (record.type === 'cooling_temperature') return { 
+    typeDisplay: 'Cooling Temperature', 
+    icon: <TimerIcon />,
+    color: 'warning'
   };
   if (record.type === 'probe_calibration') return { 
     typeDisplay: 'Probe Calibration', 
@@ -354,6 +361,9 @@ const MyRecordsListPage = () => {
       case 'food_temperature':
         headers.push('Food Name', 'Temperature', 'Note');
         break;
+      case 'cooling_temperature':
+        headers.push('Food Name', '90 Min Temp', '2 Hour Temp', 'Status', 'Corrective Actions');
+        break;
       case 'probe_calibration':
         headers.push('Probe ID', 'Temperature', 'Status', 'Note');
         break;
@@ -426,10 +436,34 @@ const MyRecordsListPage = () => {
         );
       case 'Food Name':
         return record.foodName || '-';
+      case '90 Min Temp':
+        return record.type === 'cooling_temperature' ? `${record.temperatureAfter90Min}°C` : '-';
+      case '2 Hour Temp':
+        if (record.type === 'cooling_temperature') {
+          const temp = record.temperatureAfter2Hours;
+          const isSafe = temp <= 8;
+          return (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {temp}°C
+              {!isSafe && (
+                <Tooltip title="Temperature above 8°C after 2 hours - Requires corrective action">
+                  <WarningIcon color="error" sx={{ fontSize: 16 }} />
+                </Tooltip>
+              )}
+            </Box>
+          );
+        }
+        return '-';
+      case 'Status':
+        if (record.type === 'cooling_temperature') {
+          const temp = record.temperatureAfter2Hours;
+          return temp <= 8 ? 'Safe' : 'Requires Action';
+        }
+        return record.isCalibrated ? 'Calibrated' : 'Not Calibrated';
+      case 'Corrective Actions':
+        return record.type === 'cooling_temperature' ? (record.correctiveActions || '-') : '-';
       case 'Probe ID':
         return record.probeId || '-';
-      case 'Status':
-        return record.isCalibrated ? 'Calibrated' : 'Not Calibrated';
       case 'Supplier':
         return record.supplier || '-';
       case 'Equipment':

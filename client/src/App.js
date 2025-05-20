@@ -28,6 +28,8 @@ import AuthCheck from './components/AuthCheck';
 // Import the new EquipmentManagementPage
 import EquipmentManagementPage from './pages/EquipmentManagementPage';
 import InformationPage from './pages/InformationPage';
+import CoolingTemperatureAddPage from './pages/CoolingTemperatureAddPage';
+import CoolingTemperatureListPage from './pages/CoolingTemperatureListPage';
 
 const theme = createTheme({
   palette: {
@@ -181,6 +183,23 @@ function App() {
               element={
                 <PrivateRoute>
                   <InformationPage />
+                </PrivateRoute>
+              }
+            />
+            {/* Cooling Temperature Record Routes */}
+            <Route
+              path="/records/cooling-temperature/add"
+              element={
+                <PrivateRoute>
+                  <CoolingTemperatureAddPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/records/cooling-temperature"
+              element={
+                <PrivateRoute>
+                  <CoolingTemperatureListPage />
                 </PrivateRoute>
               }
             />

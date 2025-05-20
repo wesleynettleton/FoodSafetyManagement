@@ -111,6 +111,10 @@ export const recordsAPI = {
   getTemperatures: () => api.get('/records/temperature?populate=equipment'),
   deleteTemperatures: () => api.delete('/records/temperature/all'),
 
+  // Cooling Temperature Records
+  createCoolingTemperature: (data) => api.post('/records/cooling-temperature', data),
+  getCoolingTemperatures: () => api.get('/records/cooling-temperature'),
+
   // Generic record operations
   getAll: () => api.get('/records'),
   getById: (id) => api.get(`/records/${id}`),

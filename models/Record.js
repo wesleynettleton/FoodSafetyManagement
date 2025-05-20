@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const recordSchema = new mongoose.Schema({
     type: {
         type: String,
-        enum: ['food_temperature', 'probe_calibration', 'delivery', 'fridge_temperature', 'freezer_temperature'],
+        enum: ['food_temperature', 'probe_calibration', 'delivery', 'fridge_temperature', 'freezer_temperature', 'cooling_temperature'],
         required: true
     },
     location: {
@@ -89,15 +89,45 @@ const temperatureRecordSchema = new mongoose.Schema({
     }
 });
 
+// Cooling Temperature Record
+const coolingTemperatureSchema = new mongoose.Schema({
+    foodName: {
+        type: String,
+        required: true
+    },
+    coolingStartTime: {
+        type: Date,
+        required: true
+    },
+    movedToStorageTime: {
+        type: Date,
+        required: true
+    },
+    temperatureAfter90Min: {
+        type: Number,
+        required: true
+    },
+    temperatureAfter2Hours: {
+        type: Number,
+        required: true
+    },
+    correctiveActions: {
+        type: String,
+        trim: true
+    }
+});
+
 // Create models
 const FoodTemperature = mongoose.model('FoodTemperature', { ...recordSchema.obj, ...foodTemperatureSchema.obj });
 const ProbeCalibration = mongoose.model('ProbeCalibration', { ...recordSchema.obj, ...probeCalibrationSchema.obj });
 const Delivery = mongoose.model('Delivery', { ...recordSchema.obj, ...deliverySchema.obj });
 const TemperatureRecord = mongoose.model('TemperatureRecord', { ...recordSchema.obj, ...temperatureRecordSchema.obj });
+const CoolingTemperature = mongoose.model('CoolingTemperature', { ...recordSchema.obj, ...coolingTemperatureSchema.obj });
 
 module.exports = {
     FoodTemperature,
     ProbeCalibration,
     Delivery,
-    TemperatureRecord
+    TemperatureRecord,
+    CoolingTemperature
 }; 

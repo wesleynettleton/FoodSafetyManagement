@@ -17,7 +17,8 @@ import {
   Build as BuildIcon, // Probe Calibration
   LocalShipping as LocalShippingIcon, // Delivery
   ListAlt as ListAltIcon, // Generic Records Icon
-  ArrowBack as ArrowBackIcon
+  ArrowBack as ArrowBackIcon,
+  Timer as TimerIcon // Add this import for cooling icon
 } from '@mui/icons-material';
 
 const recordTypesConfig = [
@@ -27,6 +28,13 @@ const recordTypesConfig = [
     path: '/records/food-temperature',
     icon: <ThermostatIcon sx={{ fontSize: 40 }} />,
     key: 'food-temperature'
+  },
+  {
+    title: 'Cooling Temperature Records',
+    description: 'Track food cooling processes and temperatures.',
+    path: '/records/cooling-temperature',
+    icon: <TimerIcon sx={{ fontSize: 40 }} />,
+    key: 'cooling-temperature'
   },
   {
     title: 'Probe Calibration Records',

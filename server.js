@@ -38,6 +38,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // MongoDB Connection with retry logic
+console.log('MONGODB_URI:', process.env.MONGODB_URI); // DEBUG: Print the MongoDB URI
 const connectDB = async () => {
   try {
     if (!process.env.MONGODB_URI && process.env.NODE_ENV === 'production') {
@@ -90,27 +91,34 @@ app.use('/api/records', records);
 app.use('/api/equipment', equipment);
 app.use('/api/locations', locations);
 
-// Serve static files from the React app in production
-if (process.env.NODE_ENV === 'production') {
-  // Serve static files from the React app
-  app.use(express.static(path.join(__dirname, 'client/build')));
+// Serve static files from the React build directory
+const buildPath = path.join(__dirname, 'client/build');
+console.log('Build directory path:', buildPath);
+console.log('Build directory exists:', require('fs').existsSync(buildPath));
+console.log('Build directory contents:', require('fs').readdirSync(buildPath));
 
-  // The "catchall" handler: for any request that doesn't
-  // match one above, send back React's index.html file.
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
-  });
-}
+app.use(express.static(buildPath));
+
+// Add logging for debugging
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
+// Serve React app for all other routes
+app.get('*', (req, res) => {
+  const indexPath = path.join(buildPath, 'index.html');
+  console.log('Attempting to serve index.html from:', indexPath);
+  console.log('index.html exists:', require('fs').existsSync(indexPath));
+  res.sendFile(indexPath);
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  const statusCode = err.statusCode || 500;
-  res.status(statusCode).json({
-    message: process.env.NODE_ENV === 'production' 
-      ? 'Internal server error' 
-      : err.message,
-    stack: process.env.NODE_ENV === 'production' ? undefined : err.stack
+  console.error('Error:', err);
+  res.status(err.status || 500).json({
+    message: err.message || 'Internal server error',
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 });
 

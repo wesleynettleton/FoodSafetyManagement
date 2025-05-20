@@ -9,7 +9,8 @@ const {
     FoodTemperature,
     ProbeCalibration,
     Delivery,
-    TemperatureRecord
+    TemperatureRecord,
+    CoolingTemperature
 } = require('../models/Record');
 
 // @route   POST api/records/food-temperature
@@ -172,6 +173,44 @@ router.post('/temperature', [
     }
 });
 
+// @route   POST api/records/cooling-temperature
+// @desc    Create a cooling temperature record
+// @access  Private
+router.post('/cooling-temperature', [
+    auth,
+    check('foodName', 'Food name is required').not().isEmpty(),
+    check('coolingStartTime', 'Cooling start time is required').isISO8601(),
+    check('movedToStorageTime', 'Time moved to storage is required').isISO8601(),
+    check('temperatureAfter90Min', 'Temperature after 90 minutes is required').isNumeric(),
+    check('temperatureAfter2Hours', 'Temperature after 2 hours is required').isNumeric()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const user = await User.findById(req.user.id);
+        const record = new CoolingTemperature({
+            type: 'cooling_temperature',
+            foodName: req.body.foodName,
+            coolingStartTime: new Date(req.body.coolingStartTime),
+            movedToStorageTime: new Date(req.body.movedToStorageTime),
+            temperatureAfter90Min: req.body.temperatureAfter90Min,
+            temperatureAfter2Hours: req.body.temperatureAfter2Hours,
+            correctiveActions: req.body.correctiveActions,
+            location: user.siteLocation,
+            createdBy: user.id
+        });
+
+        await record.save();
+        res.json(record);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 // @route   GET api/records/:type
 // @desc    Get records by type for a location
 // @access  Private
@@ -191,7 +230,10 @@ router.get('/:type', auth, async (req, res) => {
             case 'delivery':
                 Model = Delivery;
                 break;
-            case 'temperature': // This covers both fridge and freezer for fetching by general type
+            case 'cooling-temperature':
+                Model = CoolingTemperature;
+                break;
+            case 'temperature':
             case 'fridge_temperature':
             case 'freezer_temperature':
                 Model = TemperatureRecord;
@@ -570,6 +612,22 @@ router.delete('/:id', auth, async (req, res) => {
     } catch (err) {
         console.error('Error deleting record:', err);
         res.status(500).json({ msg: 'Server error during deletion' });
+    }
+});
+
+// @route   GET api/records/cooling-temperature
+// @desc    Get cooling temperature records for a location
+// @access  Private
+router.get('/cooling-temperature', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        const records = await CoolingTemperature.find({ location: user.siteLocation })
+            .populate('createdBy', 'name')
+            .sort({ coolingStartTime: -1 });
+        res.json(records);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
     }
 });
 

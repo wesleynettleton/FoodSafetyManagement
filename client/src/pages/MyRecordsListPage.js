@@ -299,11 +299,15 @@ const MyRecordsListPage = () => {
 
   // Add effect to filter records
   useEffect(() => {
+    let filteredRecords;
     if (activeFilter === 'all') {
-      setDisplayedRecords(allRecords);
+      filteredRecords = [...allRecords];
     } else {
-      setDisplayedRecords(allRecords.filter(record => record.type === activeFilter));
+      filteredRecords = allRecords.filter(record => record.type === activeFilter);
     }
+    // Sort by date (newest first)
+    filteredRecords.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    setDisplayedRecords(filteredRecords);
   }, [allRecords, activeFilter]);
 
   const handleFilterChange = (event, newFilter) => {

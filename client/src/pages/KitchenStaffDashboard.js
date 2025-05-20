@@ -15,7 +15,8 @@ import {
   Thermostat as ThermostatIcon,
   LocalShipping as LocalShippingIcon,
   Build as BuildIcon,
-  Info as InfoIcon
+  Info as InfoIcon,
+  Timer as TimerIcon
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
@@ -43,6 +44,12 @@ const KitchenStaffDashboard = () => {
       description: 'Add a new food temperature check.',
       icon: <ThermostatIcon sx={{ fontSize: 40 }} />,
       path: '/records/food-temperature/add'
+    },
+    {
+      title: 'Log Cooling Temperature',
+      description: 'Record food cooling process temperatures.',
+      icon: <TimerIcon sx={{ fontSize: 40 }} />,
+      path: '/records/cooling-temperature/add'
     },
     {
       title: 'Log Delivery Temperature',

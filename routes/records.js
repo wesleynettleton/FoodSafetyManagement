@@ -306,10 +306,12 @@ router.get('/:type', auth, async (req, res) => {
 router.get('/', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
+        const locationId = req.query.locationId; // Get locationId from query params
         console.log('Fetching records for user:', {
             id: user.id,
             role: user.role,
-            siteLocation: user.siteLocation
+            siteLocation: user.siteLocation,
+            requestedLocation: locationId
         });
 
         let allRecords = [];
@@ -372,29 +374,30 @@ router.get('/', auth, async (req, res) => {
             console.log('Temperature records found:', temps.length);
 
             allRecords = [...foodTemps, ...probeCals, ...deliveries, ...coolingTemps, ...temps];
-        } else {
-            // For admin, show all records from all locations
-            console.log('Fetching all records for all locations');
+        } else if (user.role === 'admin') {
+            // For admin, show records for the selected location
+            const targetLocation = locationId || user.siteLocation;
+            console.log('Fetching records for admin user at location:', targetLocation);
             
-            const foodTemps = await FoodTemperature.find()
+            const foodTemps = await FoodTemperature.find({ location: targetLocation })
                 .populate('createdBy', 'name')
                 .populate('location', 'name')
                 .sort({ createdAt: -1 });
             console.log('Food temperature records found:', foodTemps.length);
             
-            const probeCals = await ProbeCalibration.find()
+            const probeCals = await ProbeCalibration.find({ location: targetLocation })
                 .populate('createdBy', 'name')
                 .populate('location', 'name')
                 .sort({ createdAt: -1 });
             console.log('Probe calibration records found:', probeCals.length);
             
-            const deliveries = await Delivery.find()
+            const deliveries = await Delivery.find({ location: targetLocation })
                 .populate('createdBy', 'name')
                 .populate('location', 'name')
                 .sort({ createdAt: -1 });
             console.log('Delivery records found:', deliveries.length);
 
-            const coolingTemps = await CoolingTemperature.find()
+            const coolingTemps = await CoolingTemperature.find({ location: targetLocation })
                 .populate('createdBy', 'name')
                 .populate('location', 'name')
                 .sort({ createdAt: -1 });
@@ -402,6 +405,7 @@ router.get('/', auth, async (req, res) => {
             
             // First, migrate any temperature records that still use equipmentId
             const tempsToMigrate = await TemperatureRecord.find({ 
+                location: targetLocation,
                 equipmentId: { $exists: true }
             });
 
@@ -415,7 +419,7 @@ router.get('/', auth, async (req, res) => {
                 }
             }
             
-            const temps = await TemperatureRecord.find()
+            const temps = await TemperatureRecord.find({ location: targetLocation })
                 .populate('createdBy', 'name')
                 .populate('location', 'name')
                 .populate({

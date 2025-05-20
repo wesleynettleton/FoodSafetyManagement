@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Typography,
@@ -22,7 +22,11 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  Button
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import {
   Thermostat as ThermostatIcon,
@@ -39,6 +43,7 @@ import {
 import { recordsAPI } from '../services/api';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { locationsAPI } from '../services/api';
 
 const recordTypeFilters = [
   { value: 'all', label: 'All Records', icon: <AllIcon />, color: 'default' },
@@ -263,58 +268,34 @@ const MyRecordsListPage = () => {
   const [deleteError, setDeleteError] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    const fetchMyRecords = async () => {
-      setLoading(true);
+  const fetchRecords = useCallback(async () => {
+    setLoading(true);
+    setError('');
 
-      if (!user || !user._id || !user.siteLocation) {
-        console.warn('MyRecordsListPage: User data (_id or siteLocation) not available, cannot fetch or filter records.');
-        setAllRecords([]);
-        setError('User data or location not available to fetch records.');
-        setLoading(false);
-        return;
-      }
+    if (!user || !user._id) {
+      console.warn('MyRecordsListPage: User data (_id) not available, cannot fetch records.');
+      setAllRecords([]);
+      setError('User data not available to fetch records.');
+      setLoading(false);
+      return;
+    }
 
-      try {
-        const response = await recordsAPI.getAll();
-        setAllRecords(response.data);
-        setError('');
-      } catch (err) {
-        setError('Failed to fetch records. Please try again.');
-        console.error(err);
-        setAllRecords([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const timer = setTimeout(() => {
-      if (user && user._id && user.siteLocation) {
-        fetchMyRecords();
-      } else {
-        console.warn('MyRecordsListPage: User object, ID, or siteLocation is not fully available yet.');
-        setLoading(false);
-        setAllRecords([]);
-        setError('User data or location not fully loaded.');
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
+    try {
+      const response = await recordsAPI.getAll();
+      setAllRecords(response.data);
+      setError('');
+    } catch (err) {
+      setError('Failed to fetch records. Please try again.');
+      console.error(err);
+      setAllRecords([]);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
 
   useEffect(() => {
-    if (activeFilter === 'all') {
-      setDisplayedRecords(allRecords);
-    } else {
-      const filtered = allRecords.filter(record => {
-        if (activeFilter === 'equipment_temperature') {
-          return record.type === 'fridge_temperature' || record.type === 'freezer_temperature';
-        }
-        return record.type === activeFilter;
-      });
-      setDisplayedRecords(filtered);
-    }
-  }, [activeFilter, allRecords]);
+    fetchRecords();
+  }, [fetchRecords]);
 
   const handleFilterChange = (event, newFilter) => {
     if (newFilter !== null) {

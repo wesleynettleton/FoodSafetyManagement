@@ -73,6 +73,12 @@ const TEMPERATURE_STANDARDS = {
       label: '≤ 8°C',
       guidance: 'Cold food must be kept at 8°C or below to prevent bacterial growth. The danger zone is between 8°C and 63°C.'
     }
+  },
+  delivery: {
+    max: 10,
+    warningMax: 15,
+    label: '≤ 10°C',
+    guidance: 'Delivery temperatures must be kept at or below 10°C to prevent bacterial growth. Higher temperatures can allow bacteria to survive and food to deteriorate.'
   }
 };
 
@@ -164,13 +170,21 @@ const getTemperatureStatus = (record) => {
       : { status: 'danger', color: 'error.main' };
   }
 
-  // For food temperatures, we'll use different standards
   if (record.type === 'food_temperature') {
-    // Hot food should be above 63°C, cold food below 8°C
-    // This is a simplified version - you might want to add more specific rules
     return record.temperature >= 63 || record.temperature <= 8
       ? { status: 'safe', color: 'success.main' }
       : { status: 'danger', color: 'error.main' };
+  }
+
+  if (record.type === 'delivery') {
+    const temp = record.temperature;
+    if (temp < TEMPERATURE_STANDARDS.delivery.max) {
+      return { status: 'safe', color: 'success.main' };
+    }
+    if (temp >= TEMPERATURE_STANDARDS.delivery.max && temp <= TEMPERATURE_STANDARDS.delivery.warningMax) {
+      return { status: 'warning', color: 'warning.main' };
+    }
+    return { status: 'danger', color: 'error.main' };
   }
 
   return { status: 'unknown', color: 'text.secondary' };

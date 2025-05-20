@@ -302,6 +302,11 @@ const MyRecordsListPage = () => {
     let filteredRecords;
     if (activeFilter === 'all') {
       filteredRecords = [...allRecords];
+    } else if (activeFilter === 'equipment_temperature') {
+      // Filter for both fridge and freezer temperature records
+      filteredRecords = allRecords.filter(record => 
+        record.type === 'fridge_temperature' || record.type === 'freezer_temperature'
+      );
     } else {
       filteredRecords = allRecords.filter(record => record.type === activeFilter);
     }

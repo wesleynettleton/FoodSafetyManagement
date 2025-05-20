@@ -66,10 +66,10 @@ export const getTemperatureStatus = (record) => {
   // Updated delivery temperature logic
   if (record.type === 'delivery') {
     const temp = record.temperature;
-    if (temp <= TEMPERATURE_STANDARDS.delivery.max) {
+    if (temp < TEMPERATURE_STANDARDS.delivery.max) {
       return { status: 'safe', color: 'success.main' };
     }
-    if (temp <= TEMPERATURE_STANDARDS.delivery.warningMax) {
+    if (temp >= TEMPERATURE_STANDARDS.delivery.max && temp <= TEMPERATURE_STANDARDS.delivery.warningMax) {
       return { status: 'warning', color: 'warning.main' };
     }
     return { status: 'danger', color: 'error.main' };
@@ -167,6 +167,42 @@ export const getTemperatureLabel = (record) => {
   
   return `${record.temperature}°C${standard}`;
 };
+
+// Test function for temperature validation
+export const testTemperatureValidation = () => {
+  const testCases = [
+    { type: 'delivery', temperature: 4, expected: 'safe' },
+    { type: 'delivery', temperature: 5, expected: 'safe' },
+    { type: 'delivery', temperature: 7.9, expected: 'safe' },
+    { type: 'delivery', temperature: 8, expected: 'warning' },
+    { type: 'delivery', temperature: 9, expected: 'warning' },
+    { type: 'delivery', temperature: 10, expected: 'warning' },
+    { type: 'delivery', temperature: 10.1, expected: 'danger' },
+    { type: 'delivery', temperature: 11, expected: 'danger' }
+  ];
+
+  console.group('Temperature Validation Test Results');
+  testCases.forEach(test => {
+    const result = getTemperatureStatus(test);
+    const passed = result.status === test.expected;
+    console.log(
+      `%c${test.temperature}°C: ${result.status} (${passed ? '✓' : '✗'})`,
+      `color: ${passed ? 'green' : 'red'}`
+    );
+    console.log('Details:', {
+      temperature: test.temperature,
+      expected: test.expected,
+      actual: result.status,
+      color: result.color
+    });
+  });
+  console.groupEnd();
+};
+
+// Make the test function available globally for console testing
+if (typeof window !== 'undefined') {
+  window.testTemperatureValidation = testTemperatureValidation;
+}
 
 export const TemperatureCell = ({ record }) => {
   const { status, color: tempColor } = getTemperatureStatus(record);

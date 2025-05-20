@@ -297,6 +297,15 @@ const MyRecordsListPage = () => {
     fetchRecords();
   }, [fetchRecords]);
 
+  // Add effect to filter records
+  useEffect(() => {
+    if (activeFilter === 'all') {
+      setDisplayedRecords(allRecords);
+    } else {
+      setDisplayedRecords(allRecords.filter(record => record.type === activeFilter));
+    }
+  }, [allRecords, activeFilter]);
+
   const handleFilterChange = (event, newFilter) => {
     if (newFilter !== null) {
       setActiveFilter(newFilter);

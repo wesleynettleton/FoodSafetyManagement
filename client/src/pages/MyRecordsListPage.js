@@ -459,6 +459,20 @@ const MyRecordsListPage = () => {
       case 'Equipment':
         return record.equipment?.name || 'Unknown';
       case 'Temperature':
+        if (record.type === 'cooling_temperature') {
+          return (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body1">
+                90min: {record.temperatureAfter90Min}°C, 2hr: {record.temperatureAfter2Hours}°C
+              </Typography>
+              {record.temperatureAfter2Hours > 8 && (
+                <Tooltip title="Temperature above 8°C after 2 hours - Requires corrective action">
+                  <WarningIcon color="error" sx={{ fontSize: 16 }} />
+                </Tooltip>
+              )}
+            </Box>
+          );
+        }
         const { status, color: tempColor } = getTemperatureStatus(record);
         return (
           <Tooltip 
@@ -516,6 +530,7 @@ const MyRecordsListPage = () => {
         if (record.type === 'food_temperature') return record.foodName;
         if (record.type === 'probe_calibration') return `Probe: ${record.probeId}`;
         if (record.type === 'delivery') return record.supplier;
+        if (record.type === 'cooling_temperature') return record.foodName;
         if (record.type === 'fridge_temperature' || record.type === 'freezer_temperature') {
           return `${record.equipment?.name || 'Unknown'} (${record.equipmentType})`;
         }

@@ -27,6 +27,13 @@ export const TEMPERATURE_STANDARDS = {
       label: '≤ 8°C',
       guidance: 'Cold food must be kept at 8°C or below to prevent bacterial growth. The danger zone is between 8°C and 63°C.'
     }
+  },
+  delivery: {
+    max: 8,
+    warningMax: 10,
+    label: '≤ 8°C',
+    guidance: 'Deliveries must be kept at 8°C or below to prevent bacterial growth.',
+    warningGuidance: 'Temperature is in the warning zone (8-10°C). While not immediately dangerous, this temperature should be investigated and corrected soon.'
   }
 };
 
@@ -56,11 +63,16 @@ export const getTemperatureStatus = (record) => {
       : { status: 'danger', color: 'error.main' };
   }
 
-  // Delivery temperature logic: safe if <= 8°C
+  // Updated delivery temperature logic
   if (record.type === 'delivery') {
-    return record.temperature <= 8
-      ? { status: 'safe', color: 'success.main' }
-      : { status: 'danger', color: 'error.main' };
+    const temp = record.temperature;
+    if (temp <= TEMPERATURE_STANDARDS.delivery.max) {
+      return { status: 'safe', color: 'success.main' };
+    }
+    if (temp <= TEMPERATURE_STANDARDS.delivery.warningMax) {
+      return { status: 'warning', color: 'warning.main' };
+    }
+    return { status: 'danger', color: 'error.main' };
   }
 
   return { status: 'unknown', color: 'text.secondary' };
@@ -114,6 +126,30 @@ export const getTemperatureTooltip = (record) => {
     }
     
     return `${guidance}\n\nCurrent: ${temp}°C\nSafe Ranges:\nHot Food: ${TEMPERATURE_STANDARDS.food.hot.label}\nCold Food: ${TEMPERATURE_STANDARDS.food.cold.label}`;
+  }
+
+  if (record.type === 'delivery') {
+    const temp = record.temperature;
+    const status = getTemperatureStatus(record);
+    let icon = '❓';
+    let guidance = '';
+
+    switch (status.status) {
+      case 'safe':
+        icon = '✅';
+        guidance = TEMPERATURE_STANDARDS.delivery.guidance;
+        break;
+      case 'warning':
+        icon = '⚠️';
+        guidance = TEMPERATURE_STANDARDS.delivery.warningGuidance;
+        break;
+      case 'danger':
+        icon = '❌';
+        guidance = TEMPERATURE_STANDARDS.delivery.guidance;
+        break;
+    }
+
+    return `${icon} ${guidance}\n\nCurrent: ${temp}°C\nSafe Range: ${TEMPERATURE_STANDARDS.delivery.label}\nWarning Zone: 8-10°C`;
   }
 
   return 'Temperature recorded';

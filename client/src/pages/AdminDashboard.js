@@ -13,7 +13,11 @@ import {
 import {
   People as PeopleIcon,
   LocationOn as LocationIcon,
-  Assignment as RecordsIcon
+  Assignment as RecordsIcon,
+  Thermostat as ThermostatIcon,
+  Build as BuildIcon,
+  LocalShipping as LocalShippingIcon,
+  Timer as TimerIcon,
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
@@ -32,22 +36,53 @@ const AdminDashboard = () => {
   const menuItems = [
     {
       title: 'User Management',
-      description: 'Add, edit, or remove users from the system',
+      description: 'Add, edit, or remove users from the system.',
       icon: <PeopleIcon sx={{ fontSize: 40 }} />,
-      path: '/users'
+      path: '/users',
+      buttonText: 'Manage Users',
     },
     {
       title: 'Location Management',
-      description: 'Manage kitchen locations and their details',
+      description: 'Manage kitchen locations and their details.',
       icon: <LocationIcon sx={{ fontSize: 40 }} />,
-      path: '/locations'
+      path: '/locations',
+      buttonText: 'Manage Locations',
     },
     {
-      title: 'Records',
-      description: 'View and manage all food safety records',
-      icon: <RecordsIcon sx={{ fontSize: 40 }} />,
-      path: '/records'
-    }
+      title: 'Food Temperature Records',
+      description: 'View all food temperature records.',
+      icon: <ThermostatIcon sx={{ fontSize: 40 }} />,
+      path: '/records/food-temperature',
+      buttonText: 'View Records',
+    },
+    {
+      title: 'Cooling Temperature Records',
+      description: 'View all cooling temperature records.',
+      icon: <TimerIcon sx={{ fontSize: 40 }} />,
+      path: '/records/cooling-temperature',
+      buttonText: 'View Records',
+    },
+    {
+      title: 'Delivery Records',
+      description: 'View all delivery records.',
+      icon: <LocalShippingIcon sx={{ fontSize: 40 }} />,
+      path: '/records/delivery',
+      buttonText: 'View Records',
+    },
+    {
+      title: 'Equipment Temperature Records',
+      description: 'View all equipment temperature records.',
+      icon: <ThermostatIcon sx={{ fontSize: 40 }} />,
+      path: '/records/equipment-temperature',
+      buttonText: 'View Records',
+    },
+    {
+      title: 'Probe Calibration Records',
+      description: 'View all probe calibration records.',
+      icon: <BuildIcon sx={{ fontSize: 40 }} />,
+      path: '/records/probe-calibration',
+      buttonText: 'View Records',
+    },
   ];
 
   return (
@@ -103,7 +138,7 @@ const AdminDashboard = () => {
                   onClick={() => navigate(item.path)}
                   size="large"
                 >
-                  Access
+                  {item.buttonText}
                 </Button>
               </CardActions>
             </Card>

@@ -46,12 +46,8 @@ const EquipmentTemperatureListPage = () => {
         // 'temperature' is the generic type for equipment temp records in the backend
         response = await recordsAPI.getRecordsByTypeAndLocation('temperature', locationId);
       } else if (user?.role !== 'admin') {
-        // Get all records and filter for temperature records
-        response = await recordsAPI.getAll();
-        response.data = response.data.filter(record => 
-          record.type === 'fridge_temperature' || 
-          record.type === 'freezer_temperature'
-        );
+        // Get all records for the user's location of type 'temperature'
+        response = await recordsAPI.getRecordsByType('temperature');
       } else {
         setRecords([]);
         setLoading(false);

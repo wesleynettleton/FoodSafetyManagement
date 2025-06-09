@@ -124,7 +124,7 @@ const CoolingTemperatureListPage = () => {
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <IconButton onClick={() => navigate('/admin-dashboard')} sx={{ mr: 1 }}>
+          <IconButton onClick={() => navigate(-1)} sx={{ mr: 1 }}>
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h4" component="h1">

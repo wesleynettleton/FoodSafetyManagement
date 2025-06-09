@@ -19,42 +19,11 @@ import {
   FormControl,
   InputLabel
 } from '@mui/material';
-import { Add as AddIcon, ArrowBack as ArrowBackIcon, BugReport as BugReportIcon } from '@mui/icons-material';
+import { Add as AddIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { recordsAPI, locationsAPI } from '../services/api';
-import { TemperatureCell, getTemperatureStatus } from '../utils/temperatureUtils';
-
-// Test function for temperature validation
-const testTemperatureValidation = () => {
-  const testCases = [
-    { type: 'delivery', temperature: 4, expected: 'safe' },
-    { type: 'delivery', temperature: 5, expected: 'safe' },
-    { type: 'delivery', temperature: 7.9, expected: 'safe' },
-    { type: 'delivery', temperature: 8, expected: 'warning' },
-    { type: 'delivery', temperature: 9, expected: 'warning' },
-    { type: 'delivery', temperature: 10, expected: 'warning' },
-    { type: 'delivery', temperature: 10.1, expected: 'danger' },
-    { type: 'delivery', temperature: 11, expected: 'danger' }
-  ];
-
-  console.group('Temperature Validation Test Results');
-  testCases.forEach(test => {
-    const result = getTemperatureStatus(test);
-    const passed = result.status === test.expected;
-    console.log(
-      `%c${test.temperature}°C: ${result.status} (${passed ? '✓' : '✗'})`,
-      `color: ${passed ? 'green' : 'red'}`
-    );
-    console.log('Details:', {
-      temperature: test.temperature,
-      expected: test.expected,
-      actual: result.status,
-      color: result.color
-    });
-  });
-  console.groupEnd();
-};
+import { TemperatureCell } from '../utils/temperatureUtils';
 
 const DeliveryListPage = () => {
   const navigate = useNavigate();
@@ -124,10 +93,6 @@ const DeliveryListPage = () => {
     setSelectedLocation(event.target.value);
   };
 
-  const handleTestValidation = () => {
-    testTemperatureValidation();
-  };
-
   if (user?.role === 'admin' && loadingLocations) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4, textAlign: 'center' }}>
@@ -152,17 +117,6 @@ const DeliveryListPage = () => {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          {/* Add test button - only visible in development */}
-          {process.env.NODE_ENV === 'development' && (
-            <Button
-              variant="outlined"
-              startIcon={<BugReportIcon />}
-              onClick={handleTestValidation}
-              color="secondary"
-            >
-              Test Validation
-            </Button>
-          )}
           {user?.role !== 'admin' && (
             <Button 
               variant="contained" 

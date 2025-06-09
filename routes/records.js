@@ -662,5 +662,61 @@ router.get('/cooling-temperature', auth, async (req, res) => {
     }
 });
 
+// @route   DELETE api/records/:type/:id
+// @desc    Delete a record by type and ID
+// @access  Private
+router.delete('/:type/:id', auth, async (req, res) => {
+    try {
+        const { type, id } = req.params;
+        let Model;
+
+        // Determine the model based on the record type
+        switch (type) {
+            case 'food_temperature':
+                Model = FoodTemperature;
+                break;
+            case 'cooling_temperature':
+                Model = CoolingTemperature;
+                break;
+            case 'probe_calibration':
+                Model = ProbeCalibration;
+                break;
+            case 'delivery':
+                Model = Delivery;
+                break;
+            case 'fridge_temperature':
+            case 'freezer_temperature':
+                Model = TemperatureRecord;
+                break;
+            default:
+                return res.status(400).json({ msg: 'Invalid record type provided' });
+        }
+
+        const record = await Model.findById(id);
+
+        if (!record) {
+            return res.status(404).json({ msg: 'Record not found' });
+        }
+
+        // Check if the user is authorized to delete the record
+        // An admin can delete any record, a user can only delete their own
+        const user = await User.findById(req.user.id);
+        if (record.createdBy.toString() !== req.user.id && user.role !== 'admin') {
+            return res.status(401).json({ msg: 'User not authorized' });
+        }
+
+        await Model.findByIdAndDelete(id);
+
+        res.json({ msg: 'Record removed successfully' });
+    } catch (err) {
+        console.error(err.message);
+        // Check for CastError, e.g., an invalid ObjectId
+        if (err.kind === 'ObjectId') {
+            return res.status(404).json({ msg: 'Record not found' });
+        }
+        res.status(500).send('Server Error');
+    }
+});
+
 module.exports = router;
    

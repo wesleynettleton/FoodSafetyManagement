@@ -15,16 +15,9 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log('Making request:', {
-      method: config.method,
-      url: config.url,
-      headers: config.headers,
-      data: config.data
-    });
     return config;
   },
   (error) => {
-    console.error('Request error:', error);
     return Promise.reject(error);
   }
 );
@@ -32,11 +25,6 @@ api.interceptors.request.use(
 // Response interceptor
 api.interceptors.response.use(
   (response) => {
-    console.log('Response received:', {
-      status: response.status,
-      data: response.data,
-      headers: response.headers
-    });
     return response;
   },
   (error) => {
@@ -120,7 +108,7 @@ export const recordsAPI = {
   getById: (id) => api.get(`/records/${id}`),
   create: (recordData) => api.post('/records', recordData),
   update: (id, recordData) => api.put(`/records/${id}`, recordData),
-  delete: (id) => api.delete(`/records/${id}`)
+  delete: (type, id) => api.delete(`/records/${type}/${id}`)
 };
 
 // Equipment API

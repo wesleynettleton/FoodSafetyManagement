@@ -332,7 +332,7 @@ const MyRecordsListPage = () => {
 
     try {
       setIsDeleting(true);
-      await recordsAPI.delete(recordToDelete._id);
+      await recordsAPI.delete(recordToDelete.type, recordToDelete._id);
       // Remove the deleted record from both allRecords and displayedRecords
       setAllRecords(prev => prev.filter(r => r._id !== recordToDelete._id));
       setDisplayedRecords(prev => prev.filter(r => r._id !== recordToDelete._id));

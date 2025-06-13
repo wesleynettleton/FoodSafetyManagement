@@ -466,7 +466,16 @@ const MyRecordsListPage = () => {
       case 'Supplier':
         return record.supplier || '-';
       case 'Equipment':
-        return record.equipment?.name || 'Unknown';
+        return (
+          <Box>
+            {record.equipment?.name || record.equipmentName || 'Unknown Equipment'}
+            {record.equipmentName && !record.equipment && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                (Equipment deleted)
+              </Typography>
+            )}
+          </Box>
+        );
       case 'Temperature':
         if (record.type === 'cooling_temperature') {
           return (
@@ -541,7 +550,9 @@ const MyRecordsListPage = () => {
         if (record.type === 'delivery') return record.supplier;
         if (record.type === 'cooling_temperature') return record.foodName;
         if (record.type === 'fridge_temperature' || record.type === 'freezer_temperature') {
-          return `${record.equipment?.name || 'Unknown'} (${record.equipmentType})`;
+          const equipmentName = record.equipment?.name || record.equipmentName || 'Unknown';
+          const equipmentType = record.equipmentType;
+          return `${equipmentName} (${equipmentType})`;
         }
         return '-';
       default:

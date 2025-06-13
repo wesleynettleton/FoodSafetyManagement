@@ -182,7 +182,14 @@ const EquipmentTemperatureListPage = () => {
             <TableBody>
               {records.map((record) => (
                 <TableRow key={record._id} hover>
-                  <TableCell>{record.equipment?.name || 'Unknown'}</TableCell>
+                  <TableCell>
+                    {record.equipment?.name || record.equipmentName || 'Unknown Equipment'}
+                    {record.equipmentName && !record.equipment && (
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        (Equipment deleted)
+                      </Typography>
+                    )}
+                  </TableCell>
                   <TableCell>{record.equipmentType}</TableCell>
                   <TableCell>
                     <TemperatureCell record={record} />

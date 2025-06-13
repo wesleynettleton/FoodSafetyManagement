@@ -71,16 +71,18 @@ const deliverySchema = new mongoose.Schema({
 const temperatureRecordSchema = new mongoose.Schema({
     equipment: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Equipment',
-        required: true
+        ref: 'Equipment'
     },
-    temperature: {
-        type: Number,
-        required: true
+    equipmentName: {
+        type: String,
+        trim: true
     },
     equipmentType: {
         type: String,
-        enum: ['fridge', 'freezer'],
+        enum: ['fridge', 'freezer']
+    },
+    temperature: {
+        type: Number,
         required: true
     },
     note: {

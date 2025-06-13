@@ -36,6 +36,7 @@ const EquipmentManagementPage = () => {
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [open, setOpen] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState(null);
   const [formData, setFormData] = useState({
@@ -103,12 +104,20 @@ const EquipmentManagementPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this equipment?')) {
+    const equipmentToDelete = equipment.find(eq => eq._id === id);
+    const confirmMessage = `Are you sure you want to delete "${equipmentToDelete?.name}"?\n\n⚠️ Warning: This action cannot be undone. Any existing temperature records for this equipment will be preserved with the equipment name.`;
+    
+    if (window.confirm(confirmMessage)) {
       try {
-        await equipmentAPI.delete(id);
+        const response = await equipmentAPI.delete(id);
+        setSuccess(response.data.msg || 'Equipment deleted successfully');
         fetchEquipment();
+        // Clear success message after 5 seconds
+        setTimeout(() => setSuccess(''), 5000);
       } catch (err) {
-        setError('Failed to delete equipment');
+        const errorMessage = err.response?.data?.msg || 'Failed to delete equipment';
+        setError(errorMessage);
+        console.error('Equipment deletion error:', err);
       }
     }
   };
@@ -137,9 +146,22 @@ const EquipmentManagementPage = () => {
         </Button>
       </Box>
 
+      <Alert severity="info" sx={{ mb: 2 }}>
+        <Typography variant="body2">
+          <strong>Note:</strong> When deleting equipment, any existing temperature records will be preserved 
+          with the equipment name for historical reference. This ensures no data is lost.
+        </Typography>
+      </Alert>
+
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
           {error}
+        </Alert>
+      )}
+
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
+          {success}
         </Alert>
       )}
 

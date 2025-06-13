@@ -289,6 +289,13 @@ router.get('/:type', auth, async (req, res) => {
                     }
                 };
             }
+            // Handle records with equipmentName (deleted equipment)
+            if (record.equipmentName && !record.equipment) {
+                return {
+                    ...record.toObject(),
+                    equipment: null // Ensure equipment is null so frontend knows to use equipmentName
+                };
+            }
             return record;
         });
 
@@ -447,6 +454,13 @@ router.get('/', auth, async (req, res) => {
                               record.equipmentId === '681de6c1c9385a5ff66452ed' ? 'Chest Freezer' : 'Unknown',
                         type: record.equipmentType
                     }
+                };
+            }
+            // Handle records with equipmentName (deleted equipment)
+            if (record.equipmentName && !record.equipment) {
+                return {
+                    ...record.toObject(),
+                    equipment: null // Ensure equipment is null so frontend knows to use equipmentName
                 };
             }
             return record;

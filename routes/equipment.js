@@ -107,11 +107,41 @@ router.delete('/:id', auth, async (req, res) => {
             return res.status(401).json({ msg: 'Not authorized' });
         }
 
-        await equipment.remove();
-        res.json({ msg: 'Equipment removed' });
+        // Check if there are any temperature records associated with this equipment
+        const { TemperatureRecord } = require('../models/Record');
+        const existingRecords = await TemperatureRecord.find({ equipment: equipment._id });
+        
+        if (existingRecords.length > 0) {
+            // Update all temperature records to preserve the equipment name as a string
+            // and remove the equipment reference
+            await TemperatureRecord.updateMany(
+                { equipment: equipment._id },
+                { 
+                    $set: { 
+                        equipmentName: equipment.name, // Store equipment name as string
+                        equipmentType: equipment.type  // Store equipment type as string
+                    },
+                    $unset: { equipment: "" } // Remove the equipment reference
+                }
+            );
+            
+            console.log(`Updated ${existingRecords.length} temperature records for deleted equipment: ${equipment.name}`);
+        }
+
+        // Now delete the equipment
+        await Equipment.findByIdAndDelete(req.params.id);
+        res.json({ 
+            msg: `Equipment "${equipment.name}" removed successfully. ${existingRecords.length} temperature records have been preserved with equipment name.` 
+        });
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        console.error('Error deleting equipment:', err);
+        
+        // Check for specific MongoDB errors
+        if (err.code === 11000) {
+            return res.status(400).json({ msg: 'Equipment cannot be deleted due to existing references' });
+        }
+        
+        res.status(500).json({ msg: 'Failed to delete equipment. Please try again or contact an administrator.' });
     }
 });
 

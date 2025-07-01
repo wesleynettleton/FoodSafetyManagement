@@ -15,7 +15,8 @@ import {
   Build as BuildIcon,
   Info as InfoIcon,
   Assignment as AssignmentIcon,
-  ChecklistRtl as ChecklistIcon
+  ChecklistRtl as ChecklistIcon,
+  Analytics as AnalyticsIcon
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
@@ -55,6 +56,12 @@ const KitchenStaffDashboard = () => {
       description: 'Add and manage fridges and freezers.',
       icon: <BuildIcon sx={{ fontSize: 40 }} />,
       path: '/equipment'
+    },
+    {
+      title: 'View Analytics',
+      description: 'See your location\'s compliance rates and trends.',
+      icon: <AnalyticsIcon sx={{ fontSize: 40 }} />,
+      path: '/admin/analytics'
     },
     {
       title: 'Information',

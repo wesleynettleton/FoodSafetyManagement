@@ -19,6 +19,7 @@ import {
   LocalShipping as LocalShippingIcon,
   Timer as TimerIcon,
   ChecklistRtl as ChecklistIcon,
+  Analytics as AnalyticsIcon,
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
@@ -35,6 +36,13 @@ const AdminDashboard = () => {
   };
 
   const menuItems = [
+    {
+      title: 'Analytics Dashboard',
+      description: 'View compliance rates, trends, and insights across all locations.',
+      icon: <AnalyticsIcon sx={{ fontSize: 40 }} />,
+      path: '/admin/analytics',
+      buttonText: 'View Analytics',
+    },
     {
       title: 'User Management',
       description: 'Add, edit, or remove users from the system.',

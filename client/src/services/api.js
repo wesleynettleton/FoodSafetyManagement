@@ -124,4 +124,11 @@ export const equipmentAPI = {
   delete: (id) => api.delete(`/equipment/${id}`)
 };
 
+export const analyticsAPI = {
+  getAnalytics: (location = 'all') => {
+    const params = location !== 'all' ? `?location=${location}` : '';
+    return api.get(`/analytics${params}`);
+  }
+};
+
 export default api;

@@ -38,6 +38,7 @@ import AdminChecklistsPage from './pages/AdminChecklistsPage';
 import AdminWeeklyRecordsPage from './pages/AdminWeeklyRecordsPage';
 import AdminOpeningRecordsPage from './pages/AdminOpeningRecordsPage';
 import AdminClosingRecordsPage from './pages/AdminClosingRecordsPage';
+import AnalyticsDashboard from './pages/AnalyticsDashboard';
 
 const theme = createTheme({
   palette: {
@@ -244,6 +245,15 @@ function App() {
               element={
                 <PrivateRoute>
                   <CoolingTemperatureListPage />
+                </PrivateRoute>
+              }
+            />
+            {/* Admin Analytics Route */}
+            <Route
+              path="/admin/analytics"
+              element={
+                <PrivateRoute>
+                  <AnalyticsDashboard />
                 </PrivateRoute>
               }
             />

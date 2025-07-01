@@ -113,7 +113,7 @@ const CoolingTemperatureAddPage = () => {
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={() => navigate('/records/cooling-temperature')} sx={{ mr: 1 }} aria-label="go back">
+        <IconButton onClick={() => navigate(-1)} sx={{ mr: 1 }} aria-label="go back">
           <ArrowBackIcon />
         </IconButton>
         <Typography variant="h4" component="h1">

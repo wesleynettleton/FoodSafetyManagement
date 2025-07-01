@@ -221,25 +221,7 @@ const WeeklyRecordPage = () => {
                       {section.question}
                     </TableCell>
                     <TableCell align="center">
-                      {section.items.length > 0 ? (
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                          {section.items.map((item, itemIndex) => (
-                            <FormControl key={itemIndex}>
-                              <RadioGroup
-                                value={checklistData[`${sectionIndex}-${itemIndex}`] || ''}
-                                onChange={(e) => handleRadioChange(sectionIndex, itemIndex, e.target.value)}
-                              >
-                                <FormControlLabel 
-                                  value="yes" 
-                                  control={<Radio size="small" />} 
-                                  label="" 
-                                  sx={{ m: 0 }}
-                                />
-                              </RadioGroup>
-                            </FormControl>
-                          ))}
-                        </Box>
-                      ) : (
+                      {section.items.length === 0 && (
                         <FormControl>
                           <RadioGroup
                             value={checklistData[`${sectionIndex}-main`] || ''}
@@ -256,25 +238,7 @@ const WeeklyRecordPage = () => {
                       )}
                     </TableCell>
                     <TableCell align="center">
-                      {section.items.length > 0 ? (
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                          {section.items.map((item, itemIndex) => (
-                            <FormControl key={itemIndex}>
-                              <RadioGroup
-                                value={checklistData[`${sectionIndex}-${itemIndex}`] || ''}
-                                onChange={(e) => handleRadioChange(sectionIndex, itemIndex, e.target.value)}
-                              >
-                                <FormControlLabel 
-                                  value="no" 
-                                  control={<Radio size="small" />} 
-                                  label="" 
-                                  sx={{ m: 0 }}
-                                />
-                              </RadioGroup>
-                            </FormControl>
-                          ))}
-                        </Box>
-                      ) : (
+                      {section.items.length === 0 && (
                         <FormControl>
                           <RadioGroup
                             value={checklistData[`${sectionIndex}-main`] || ''}
@@ -291,25 +255,7 @@ const WeeklyRecordPage = () => {
                       )}
                     </TableCell>
                     <TableCell align="center">
-                      {section.items.length > 0 ? (
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                          {section.items.map((item, itemIndex) => (
-                            <FormControl key={itemIndex}>
-                              <RadioGroup
-                                value={checklistData[`${sectionIndex}-${itemIndex}`] || ''}
-                                onChange={(e) => handleRadioChange(sectionIndex, itemIndex, e.target.value)}
-                              >
-                                <FormControlLabel 
-                                  value="na" 
-                                  control={<Radio size="small" />} 
-                                  label="" 
-                                  sx={{ m: 0 }}
-                                />
-                              </RadioGroup>
-                            </FormControl>
-                          ))}
-                        </Box>
-                      ) : (
+                      {section.items.length === 0 && (
                         <FormControl>
                           <RadioGroup
                             value={checklistData[`${sectionIndex}-main`] || ''}
@@ -326,20 +272,58 @@ const WeeklyRecordPage = () => {
                       )}
                     </TableCell>
                   </TableRow>
-                  {section.items.length > 0 && (
-                    <TableRow>
+                  {section.items.length > 0 && section.items.map((item, itemIndex) => (
+                    <TableRow key={itemIndex}>
                       <TableCell sx={{ pl: 4 }}>
-                        <Box component="ul" sx={{ mt: 0, mb: 0, pl: 2 }}>
-                          {section.items.map((item, index) => (
-                            <li key={index} style={{ marginBottom: '8px' }}>{item}</li>
-                          ))}
-                        </Box>
+                        • {item}
                       </TableCell>
-                      <TableCell></TableCell>
-                      <TableCell></TableCell>
-                      <TableCell></TableCell>
+                      <TableCell align="center">
+                        <FormControl>
+                          <RadioGroup
+                            value={checklistData[`${sectionIndex}-${itemIndex}`] || ''}
+                            onChange={(e) => handleRadioChange(sectionIndex, itemIndex, e.target.value)}
+                          >
+                            <FormControlLabel 
+                              value="yes" 
+                              control={<Radio size="small" />} 
+                              label="" 
+                              sx={{ m: 0 }}
+                            />
+                          </RadioGroup>
+                        </FormControl>
+                      </TableCell>
+                      <TableCell align="center">
+                        <FormControl>
+                          <RadioGroup
+                            value={checklistData[`${sectionIndex}-${itemIndex}`] || ''}
+                            onChange={(e) => handleRadioChange(sectionIndex, itemIndex, e.target.value)}
+                          >
+                            <FormControlLabel 
+                              value="no" 
+                              control={<Radio size="small" />} 
+                              label="" 
+                              sx={{ m: 0 }}
+                            />
+                          </RadioGroup>
+                        </FormControl>
+                      </TableCell>
+                      <TableCell align="center">
+                        <FormControl>
+                          <RadioGroup
+                            value={checklistData[`${sectionIndex}-${itemIndex}`] || ''}
+                            onChange={(e) => handleRadioChange(sectionIndex, itemIndex, e.target.value)}
+                          >
+                            <FormControlLabel 
+                              value="na" 
+                              control={<Radio size="small" />} 
+                              label="" 
+                              sx={{ m: 0 }}
+                            />
+                          </RadioGroup>
+                        </FormControl>
+                      </TableCell>
                     </TableRow>
-                  )}
+                  ))}
                 </React.Fragment>
               ))}
             </TableBody>

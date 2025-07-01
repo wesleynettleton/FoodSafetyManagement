@@ -168,13 +168,12 @@ router.get('/', auth, async (req, res) => {
         }).length;
 
         const nonCompliant = locationRecords.length - compliant;
-        const pending = Math.floor(Math.random() * 3); // Mock pending items
 
         return {
           location: loc.name,
           compliant,
           nonCompliant,
-          pending
+          pending: 0 // No pending items tracked yet
         };
       })
     );

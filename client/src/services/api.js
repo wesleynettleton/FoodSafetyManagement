@@ -103,6 +103,10 @@ export const recordsAPI = {
   createCoolingTemperature: (data) => api.post('/records/cooling-temperature', data),
   getCoolingTemperatures: () => api.get('/records/cooling-temperature'),
 
+  // Weekly Records
+  createWeeklyRecord: (data) => api.post('/records/weekly-record', data),
+  getWeeklyRecords: () => api.get('/records/weekly-record'),
+
   // Generic record operations
   getAll: () => api.get('/records'),
   getById: (id) => api.get(`/records/${id}`),

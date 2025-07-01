@@ -26,6 +26,7 @@ import {
   ArrowBack as ArrowBackIcon,
   CalendarMonth as WeeklyIcon
 } from '@mui/icons-material';
+import { recordsAPI } from '../services/api';
 
 const WeeklyRecordPage = () => {
   const navigate = useNavigate();
@@ -150,20 +151,26 @@ const WeeklyRecordPage = () => {
     setCorrectiveActions([...correctiveActions, { deviation: '', action: '' }]);
   };
 
-  const handleSubmit = () => {
-    // Here you would normally submit to your API
-    console.log('Weekly Record Data:', {
-      weekCommencing,
-      checklistData,
-      correctiveActions,
-      notes,
-      managerSignature,
-      date
-    });
-    
-    // For now, show success message
-    alert('Weekly Record submitted successfully!');
-    navigate('/checklists');
+  const handleSubmit = async () => {
+    try {
+      const submitData = {
+        weekCommencing,
+        checklistData,
+        correctiveActions: correctiveActions.filter(action => 
+          action.deviation.trim() || action.action.trim()
+        ),
+        notes,
+        managerSignature,
+        signatureDate: date
+      };
+
+      await recordsAPI.createWeeklyRecord(submitData);
+      alert('Weekly Record submitted successfully!');
+      navigate('/checklists');
+    } catch (error) {
+      console.error('Error submitting weekly record:', error);
+      alert('Error submitting weekly record. Please try again.');
+    }
   };
 
   return (

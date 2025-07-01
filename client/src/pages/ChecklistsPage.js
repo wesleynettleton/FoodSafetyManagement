@@ -15,7 +15,8 @@ import {
   WbSunny as OpeningIcon,
   NightsStay as ClosingIcon,
   CalendarMonth as WeeklyIcon,
-  ArrowBack as ArrowBackIcon
+  ArrowBack as ArrowBackIcon,
+  Visibility as ViewIcon
 } from '@mui/icons-material';
 
 const ChecklistsPage = () => {
@@ -45,6 +46,14 @@ const ChecklistsPage = () => {
       path: '/checklists/weekly',
       color: 'secondary',
       buttonText: 'Start Weekly Record'
+    },
+    {
+      title: 'View Weekly Records',
+      description: 'View completed weekly safety records for your location.',
+      icon: <ViewIcon sx={{ fontSize: 40 }} />,
+      path: '/checklists/weekly/list',
+      color: 'info',
+      buttonText: 'View Records'
     }
   ];
 

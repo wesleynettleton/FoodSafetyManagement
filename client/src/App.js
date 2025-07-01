@@ -33,6 +33,7 @@ import CoolingTemperatureListPage from './pages/CoolingTemperatureListPage';
 import TakeRecordsPage from './pages/TakeRecordsPage';
 import ChecklistsPage from './pages/ChecklistsPage';
 import WeeklyRecordPage from './pages/WeeklyRecordPage';
+import WeeklyRecordListPage from './pages/WeeklyRecordListPage';
 
 const theme = createTheme({
   palette: {
@@ -213,6 +214,15 @@ function App() {
               element={
                 <PrivateRoute>
                   <WeeklyRecordPage />
+                </PrivateRoute>
+              }
+            />
+            {/* Weekly Record List Route */}
+            <Route
+              path="/checklists/weekly/list"
+              element={
+                <PrivateRoute>
+                  <WeeklyRecordListPage />
                 </PrivateRoute>
               }
             />

@@ -10,7 +10,8 @@ const {
     ProbeCalibration,
     Delivery,
     TemperatureRecord,
-    CoolingTemperature
+    CoolingTemperature,
+    WeeklyRecord
 } = require('../models/Record');
 
 // @route   POST api/records/food-temperature
@@ -728,6 +729,60 @@ router.delete('/:type/:id', auth, async (req, res) => {
         if (err.kind === 'ObjectId') {
             return res.status(404).json({ msg: 'Record not found' });
         }
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   POST api/records/weekly-record
+// @desc    Create a weekly record
+// @access  Private
+router.post('/weekly-record', [
+    auth,
+    check('weekCommencing', 'Week commencing date is required').isISO8601(),
+    check('checklistData', 'Checklist data is required').isObject(),
+    check('managerSignature', 'Manager signature is required').not().isEmpty(),
+    check('signatureDate', 'Signature date is required').isISO8601()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const user = await User.findById(req.user.id);
+        const record = new WeeklyRecord({
+            type: 'weekly_record',
+            weekCommencing: new Date(req.body.weekCommencing),
+            checklistData: req.body.checklistData,
+            correctiveActions: req.body.correctiveActions || [],
+            notes: req.body.notes,
+            managerSignature: req.body.managerSignature,
+            signatureDate: new Date(req.body.signatureDate),
+            location: user.siteLocation,
+            createdBy: user.id
+        });
+
+        await record.save();
+        res.json(record);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   GET api/records/weekly-record
+// @desc    Get weekly records for a location
+// @access  Private
+router.get('/weekly-record', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        const records = await WeeklyRecord.find({ location: user.siteLocation })
+            .populate('createdBy', 'name')
+            .populate('location', 'name')
+            .sort({ weekCommencing: -1 });
+        res.json(records);
+    } catch (err) {
+        console.error(err.message);
         res.status(500).send('Server Error');
     }
 });

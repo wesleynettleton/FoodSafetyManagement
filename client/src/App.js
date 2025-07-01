@@ -31,6 +31,7 @@ import InformationPage from './pages/InformationPage';
 import CoolingTemperatureAddPage from './pages/CoolingTemperatureAddPage';
 import CoolingTemperatureListPage from './pages/CoolingTemperatureListPage';
 import TakeRecordsPage from './pages/TakeRecordsPage';
+import ChecklistsPage from './pages/ChecklistsPage';
 
 const theme = createTheme({
   palette: {
@@ -193,6 +194,15 @@ function App() {
               element={
                 <PrivateRoute>
                   <TakeRecordsPage />
+                </PrivateRoute>
+              }
+            />
+            {/* Checklists Page Route */}
+            <Route
+              path="/checklists"
+              element={
+                <PrivateRoute>
+                  <ChecklistsPage />
                 </PrivateRoute>
               }
             />

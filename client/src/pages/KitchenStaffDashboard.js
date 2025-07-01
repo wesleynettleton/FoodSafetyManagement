@@ -14,7 +14,8 @@ import {
   ListAlt as ListAltIcon,
   Build as BuildIcon,
   Info as InfoIcon,
-  Assignment as AssignmentIcon
+  Assignment as AssignmentIcon,
+  ChecklistRtl as ChecklistIcon
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
@@ -42,6 +43,12 @@ const KitchenStaffDashboard = () => {
       description: 'Log temperatures and safety checks.',
       icon: <AssignmentIcon sx={{ fontSize: 40 }} />,
       path: '/take-records'
+    },
+    {
+      title: 'Checklists',
+      description: 'Complete daily and weekly safety checklists.',
+      icon: <ChecklistIcon sx={{ fontSize: 40 }} />,
+      path: '/checklists'
     },
     {
       title: 'Manage Equipment',
@@ -118,7 +125,9 @@ const KitchenStaffDashboard = () => {
                       ? 'View' 
                       : item.title === 'Take Records'
                         ? 'Start Recording'
-                        : 'Log Record'}
+                        : item.title === 'Checklists'
+                          ? 'View Checklists'
+                          : 'Log Record'}
                 </Button>
               </CardActions>
             </Card>

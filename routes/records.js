@@ -212,6 +212,43 @@ router.post('/cooling-temperature', [
     }
 });
 
+// @route   GET api/records/weekly-record
+// @desc    Get weekly records for a location
+// @access  Private
+router.get('/weekly-record', auth, async (req, res) => {
+    console.log('GET /weekly-record route hit, user ID:', req.user?.id);
+    try {
+        if (!req.user || !req.user.id) {
+            console.error('No user ID in request');
+            return res.status(400).json({ msg: 'User authentication failed' });
+        }
+
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            console.error('User not found in database:', req.user.id);
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        console.log('User found:', { id: user.id, siteLocation: user.siteLocation });
+        
+        if (!user.siteLocation) {
+            console.error('User has no siteLocation:', user.id);
+            return res.status(400).json({ msg: 'User has no assigned location' });
+        }
+        
+        const records = await WeeklyRecord.find({ location: user.siteLocation })
+            .populate('createdBy', 'name')
+            .populate('location', 'name')
+            .sort({ weekCommencing: -1 });
+        
+        console.log('Weekly records found:', records.length);
+        res.json(records);
+    } catch (err) {
+        console.error('Error in GET /weekly-record:', err);
+        res.status(500).json({ msg: 'Server Error', error: err.message });
+    }
+});
+
 // @route   GET api/records/:type
 // @desc    Get records by type for a location
 // @access  Private
@@ -790,43 +827,6 @@ router.post('/weekly-record', [
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
-    }
-});
-
-// @route   GET api/records/weekly-record
-// @desc    Get weekly records for a location
-// @access  Private
-router.get('/weekly-record', auth, async (req, res) => {
-    console.log('GET /weekly-record route hit, user ID:', req.user?.id);
-    try {
-        if (!req.user || !req.user.id) {
-            console.error('No user ID in request');
-            return res.status(400).json({ msg: 'User authentication failed' });
-        }
-
-        const user = await User.findById(req.user.id);
-        if (!user) {
-            console.error('User not found in database:', req.user.id);
-            return res.status(404).json({ msg: 'User not found' });
-        }
-
-        console.log('User found:', { id: user.id, siteLocation: user.siteLocation });
-        
-        if (!user.siteLocation) {
-            console.error('User has no siteLocation:', user.id);
-            return res.status(400).json({ msg: 'User has no assigned location' });
-        }
-        
-        const records = await WeeklyRecord.find({ location: user.siteLocation })
-            .populate('createdBy', 'name')
-            .populate('location', 'name')
-            .sort({ weekCommencing: -1 });
-        
-        console.log('Weekly records found:', records.length);
-        res.json(records);
-    } catch (err) {
-        console.error('Error in GET /weekly-record:', err);
-        res.status(500).json({ msg: 'Server Error', error: err.message });
     }
 });
 

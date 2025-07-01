@@ -361,7 +361,7 @@ const MyRecordsListPage = () => {
         headers.push('Food Name', 'Temperature', 'Note');
         break;
       case 'cooling_temperature':
-        headers.push('Food Name', '90 Min Temp', '2 Hour Temp', 'Status', 'Corrective Actions');
+        headers.push('Food Name', 'Cooling Start', 'Moved to Storage', '90 Min Temp', '2 Hour Temp', 'Status', 'Corrective Actions');
         break;
       case 'probe_calibration':
         headers.push('Probe ID', 'Temperature', 'Status', 'Note');
@@ -424,25 +424,6 @@ const MyRecordsListPage = () => {
           </Tooltip>
         );
       case 'Date':
-        if (record.type === 'cooling_temperature') {
-          return (
-            <Box>
-              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                {new Date(record.createdAt).toLocaleDateString('en-GB', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric'
-                })}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {new Date(record.createdAt).toLocaleTimeString('en-GB', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </Typography>
-            </Box>
-          );
-        }
         return (
           <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
             {new Date(record.createdAt).toLocaleDateString('en-GB', {
@@ -454,6 +435,48 @@ const MyRecordsListPage = () => {
         );
       case 'Food Name':
         return record.foodName || '-';
+      case 'Cooling Start':
+        if (record.type === 'cooling_temperature' && record.coolingStartTime) {
+          return (
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                {new Date(record.coolingStartTime).toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric'
+                })}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {new Date(record.coolingStartTime).toLocaleTimeString('en-GB', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </Typography>
+            </Box>
+          );
+        }
+        return '-';
+      case 'Moved to Storage':
+        if (record.type === 'cooling_temperature' && record.movedToStorageTime) {
+          return (
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                {new Date(record.movedToStorageTime).toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric'
+                })}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {new Date(record.movedToStorageTime).toLocaleTimeString('en-GB', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </Typography>
+            </Box>
+          );
+        }
+        return '-';
       case '90 Min Temp':
         return record.type === 'cooling_temperature' ? `${record.temperatureAfter90Min}°C` : '-';
       case '2 Hour Temp':

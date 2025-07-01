@@ -18,6 +18,7 @@ import {
   Build as BuildIcon,
   LocalShipping as LocalShippingIcon,
   Timer as TimerIcon,
+  ChecklistRtl as ChecklistIcon,
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
@@ -47,6 +48,13 @@ const AdminDashboard = () => {
       icon: <LocationIcon sx={{ fontSize: 40 }} />,
       path: '/locations',
       buttonText: 'Manage Locations',
+    },
+    {
+      title: 'Checklist Records',
+      description: 'View opening, closing, and weekly checklist records.',
+      icon: <ChecklistIcon sx={{ fontSize: 40 }} />,
+      path: '/admin/checklists',
+      buttonText: 'View Checklists',
     },
     {
       title: 'Food Temperature Records',

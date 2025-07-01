@@ -34,6 +34,10 @@ import TakeRecordsPage from './pages/TakeRecordsPage';
 import ChecklistsPage from './pages/ChecklistsPage';
 import WeeklyRecordPage from './pages/WeeklyRecordPage';
 import WeeklyRecordListPage from './pages/WeeklyRecordListPage';
+import AdminChecklistsPage from './pages/AdminChecklistsPage';
+import AdminWeeklyRecordsPage from './pages/AdminWeeklyRecordsPage';
+import AdminOpeningRecordsPage from './pages/AdminOpeningRecordsPage';
+import AdminClosingRecordsPage from './pages/AdminClosingRecordsPage';
 
 const theme = createTheme({
   palette: {
@@ -240,6 +244,39 @@ function App() {
               element={
                 <PrivateRoute>
                   <CoolingTemperatureListPage />
+                </PrivateRoute>
+              }
+            />
+            {/* Admin Checklist Routes */}
+            <Route
+              path="/admin/checklists"
+              element={
+                <PrivateRoute>
+                  <AdminChecklistsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/admin/checklists/weekly"
+              element={
+                <PrivateRoute>
+                  <AdminWeeklyRecordsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/admin/checklists/opening"
+              element={
+                <PrivateRoute>
+                  <AdminOpeningRecordsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/admin/checklists/closing"
+              element={
+                <PrivateRoute>
+                  <AdminClosingRecordsPage />
                 </PrivateRoute>
               }
             />

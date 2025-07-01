@@ -567,6 +567,9 @@ router.get('/admin/:type/:locationId', auth, async (req, res) => {
             case 'cooling-temperature':
                 Model = CoolingTemperature;
                 break;
+            case 'weekly-record':
+                Model = WeeklyRecord;
+                break;
             case 'temperature':
             case 'fridge_temperature':
             case 'freezer_temperature':
@@ -575,10 +578,24 @@ router.get('/admin/:type/:locationId', auth, async (req, res) => {
             default:
                 return res.status(400).json({ msg: 'Invalid record type' });
         }
-        const records = await Model.find({ location: req.params.locationId })
-            .populate('createdBy', 'name')
-            .populate('equipment', 'name type')
-            .sort({ createdAt: -1 });
+        let query = Model.find({ location: req.params.locationId })
+            .populate('createdBy', 'name');
+
+        // Add equipment population for temperature records
+        if (Model === TemperatureRecord) {
+            query.populate('equipment', 'name type');
+        }
+
+        // Sort by appropriate field based on model
+        if (Model === WeeklyRecord) {
+            query.sort({ weekCommencing: -1 });
+        } else if (Model === CoolingTemperature) {
+            query.sort({ coolingStartTime: -1 });
+        } else {
+            query.sort({ createdAt: -1 });
+        }
+
+        const records = await query;
         res.json(records);
     } catch (err) {
         console.error(err.message);

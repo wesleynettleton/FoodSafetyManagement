@@ -424,6 +424,25 @@ const MyRecordsListPage = () => {
           </Tooltip>
         );
       case 'Date':
+        if (record.type === 'cooling_temperature') {
+          return (
+            <Box>
+              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                {new Date(record.createdAt).toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric'
+                })}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {new Date(record.createdAt).toLocaleTimeString('en-GB', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </Typography>
+            </Box>
+          );
+        }
         return (
           <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
             {new Date(record.createdAt).toLocaleDateString('en-GB', {

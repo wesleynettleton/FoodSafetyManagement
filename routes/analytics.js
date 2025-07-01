@@ -1,6 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const Record = require('../models/Record');
+const { 
+  FoodTemperature, 
+  ProbeCalibration, 
+  Delivery, 
+  TemperatureRecord, 
+  CoolingTemperature, 
+  WeeklyRecord 
+} = require('../models/Record');
 const Location = require('../models/Location');
 const auth = require('../middleware/auth');
 
@@ -54,23 +61,51 @@ router.get('/', auth, async (req, res) => {
     // Use the allowed locations based on user role
     const locations = allowedLocations;
     
-    // Get total record counts
-    const totalRecords = await Record.countDocuments(locationFilter);
+    // Get total record counts from all record types
+    const [foodTempCount, probeCalCount, deliveryCount, tempRecordCount, coolingTempCount, weeklyRecordCount] = await Promise.all([
+      FoodTemperature.countDocuments(locationFilter),
+      ProbeCalibration.countDocuments(locationFilter),
+      Delivery.countDocuments(locationFilter),
+      TemperatureRecord.countDocuments(locationFilter),
+      CoolingTemperature.countDocuments(locationFilter),
+      WeeklyRecord.countDocuments(locationFilter)
+    ]);
+    const totalRecords = foodTempCount + probeCalCount + deliveryCount + tempRecordCount + coolingTempCount + weeklyRecordCount;
     
     // Get records from last 30 days
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
-    const recentRecords = await Record.find({
-      ...locationFilter,
-      createdAt: { $gte: thirtyDaysAgo }
-    }).populate('location', 'name');
+    const recentRecordsPromises = [
+      FoodTemperature.find({ ...locationFilter, createdAt: { $gte: thirtyDaysAgo } }).populate('location', 'name'),
+      ProbeCalibration.find({ ...locationFilter, createdAt: { $gte: thirtyDaysAgo } }).populate('location', 'name'),
+      Delivery.find({ ...locationFilter, createdAt: { $gte: thirtyDaysAgo } }).populate('location', 'name'),
+      TemperatureRecord.find({ ...locationFilter, createdAt: { $gte: thirtyDaysAgo } }).populate('location', 'name'),
+      CoolingTemperature.find({ ...locationFilter, createdAt: { $gte: thirtyDaysAgo } }).populate('location', 'name'),
+      WeeklyRecord.find({ ...locationFilter, createdAt: { $gte: thirtyDaysAgo } }).populate('location', 'name')
+    ];
+    
+    const [foodTemps, probeCals, deliveries, tempRecords, coolingTemps, weeklyRecords] = await Promise.all(recentRecordsPromises);
+    
+    // Combine all records and add type field for identification
+    const recentRecords = [
+      ...foodTemps.map(r => ({ ...r.toObject(), type: 'food-temperature' })),
+      ...probeCals.map(r => ({ ...r.toObject(), type: 'probe-calibration' })),
+      ...deliveries.map(r => ({ ...r.toObject(), type: 'delivery' })),
+      ...tempRecords.map(r => ({ ...r.toObject(), type: 'equipment-temperature' })),
+      ...coolingTemps.map(r => ({ ...r.toObject(), type: 'cooling-temperature' })),
+      ...weeklyRecords.map(r => ({ ...r.toObject(), type: 'weekly-record' }))
+    ];
 
     // Calculate compliance rate
     const totalRecentRecords = recentRecords.length;
     const compliantRecords = recentRecords.filter(record => {
-      if (record.type === 'food-temperature' || record.type === 'equipment-temperature') {
+      if (record.type === 'food-temperature' || record.type === 'equipment-temperature' || record.type === 'delivery') {
         return record.temperature >= -18 && record.temperature <= 5; // Safe temperature range
+      }
+      if (record.type === 'cooling-temperature') {
+        // For cooling records, check the final temperature after 2 hours
+        return record.temperatureAfter2Hours >= -18 && record.temperatureAfter2Hours <= 5;
       }
       if (record.type === 'weekly-record') {
         const checklist = record.checklistData;
@@ -84,7 +119,7 @@ router.get('/', auth, async (req, res) => {
         }
         return true;
       }
-      return true; // Default to compliant for other types
+      return true; // Default to compliant for other types (probe calibration)
     });
     
     const complianceRate = totalRecentRecords > 0 
@@ -102,8 +137,11 @@ router.get('/', auth, async (req, res) => {
         );
         
         const compliant = locationRecords.filter(record => {
-          if (record.type === 'food-temperature' || record.type === 'equipment-temperature') {
+          if (record.type === 'food-temperature' || record.type === 'equipment-temperature' || record.type === 'delivery') {
             return record.temperature >= -18 && record.temperature <= 5;
+          }
+          if (record.type === 'cooling-temperature') {
+            return record.temperatureAfter2Hours >= -18 && record.temperatureAfter2Hours <= 5;
           }
           if (record.type === 'weekly-record') {
             const checklist = record.checklistData;
@@ -139,15 +177,28 @@ router.get('/', auth, async (req, res) => {
       const dayStart = new Date(date.setHours(0, 0, 0, 0));
       const dayEnd = new Date(date.setHours(23, 59, 59, 999));
 
-      const dayRecords = await Record.find({
-        ...locationFilter,
-        type: { $in: ['food-temperature', 'equipment-temperature', 'cooling-temperature'] },
-        createdAt: { $gte: dayStart, $lte: dayEnd }
-      });
+      // Get temperature records for the day from all relevant collections
+      const [dayFoodTemps, dayTempRecords, dayCoolingTemps] = await Promise.all([
+        FoodTemperature.find({ ...locationFilter, createdAt: { $gte: dayStart, $lte: dayEnd } }),
+        TemperatureRecord.find({ ...locationFilter, createdAt: { $gte: dayStart, $lte: dayEnd } }),
+        CoolingTemperature.find({ ...locationFilter, createdAt: { $gte: dayStart, $lte: dayEnd } })
+      ]);
+      
+      const dayRecords = [
+        ...dayFoodTemps,
+        ...dayTempRecords, 
+        ...dayCoolingTemps
+      ];
 
       const temperatures = dayRecords
-        .filter(record => record.temperature !== undefined)
-        .map(record => record.temperature);
+        .filter(record => {
+          // For cooling temperatures, use temperatureAfter2Hours, for others use temperature
+          return record.temperature !== undefined || record.temperatureAfter2Hours !== undefined;
+        })
+        .map(record => {
+          // Return the appropriate temperature field
+          return record.temperature !== undefined ? record.temperature : record.temperatureAfter2Hours;
+        });
       
       const avgTemp = temperatures.length > 0 
         ? (temperatures.reduce((sum, temp) => sum + temp, 0) / temperatures.length).toFixed(1)
@@ -166,18 +217,31 @@ router.get('/', auth, async (req, res) => {
     const recentAlerts = [];
     
     // Temperature alerts
-    const highTempRecords = recentRecords.filter(record => 
-      (record.type === 'food-temperature' || record.type === 'equipment-temperature') &&
-      record.temperature > 5
-    ).slice(0, 3);
+    const highTempRecords = recentRecords.filter(record => {
+      if (record.type === 'food-temperature' || record.type === 'equipment-temperature' || record.type === 'delivery') {
+        return record.temperature > 5;
+      }
+      if (record.type === 'cooling-temperature') {
+        return record.temperatureAfter2Hours > 5;
+      }
+      return false;
+    }).slice(0, 3);
 
     highTempRecords.forEach((record, index) => {
+      const temp = record.temperature || record.temperatureAfter2Hours;
+      const typeNames = {
+        'food-temperature': 'Food',
+        'equipment-temperature': 'Equipment',
+        'delivery': 'Delivery',
+        'cooling-temperature': 'Cooling'
+      };
+      
       recentAlerts.push({
         id: `temp-${index}`,
         type: 'Temperature',
-        message: `${record.type === 'food-temperature' ? 'Food' : 'Equipment'} temperature above 5°C (${record.temperature}°C)`,
+        message: `${typeNames[record.type] || 'Temperature'} above 5°C (${temp}°C)`,
         location: record.location?.name || 'Unknown',
-        severity: record.temperature > 10 ? 'high' : 'medium',
+        severity: temp > 10 ? 'high' : 'medium',
         time: getRelativeTime(record.createdAt)
       });
     });

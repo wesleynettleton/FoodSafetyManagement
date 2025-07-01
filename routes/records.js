@@ -550,6 +550,7 @@ router.delete('/all', auth, async (req, res) => {
         await Delivery.deleteMany({ location: user.siteLocation });
         await TemperatureRecord.deleteMany({ location: user.siteLocation });
         await CoolingTemperature.deleteMany({ location: user.siteLocation });
+        await WeeklyRecord.deleteMany({ location: user.siteLocation });
 
         res.json({ msg: 'All records deleted successfully' });
     } catch (err) {
@@ -581,6 +582,9 @@ router.delete('/:type/all', auth, async (req, res) => {
                 break;
             case 'cooling-temperature':
                 Model = CoolingTemperature;
+                break;
+            case 'weekly-record':
+                Model = WeeklyRecord;
                 break;
             default:
                 return res.status(400).json({ msg: 'Invalid record type' });
@@ -628,6 +632,10 @@ router.delete('/:id', auth, async (req, res) => {
         if (!record) {
             record = await CoolingTemperature.findById(recordId);
             Model = CoolingTemperature;
+        }
+        if (!record) {
+            record = await WeeklyRecord.findById(recordId);
+            Model = WeeklyRecord;
         }
 
         if (!record) {
@@ -703,6 +711,9 @@ router.delete('/:type/:id', auth, async (req, res) => {
             case 'freezer_temperature':
                 Model = TemperatureRecord;
                 break;
+            case 'weekly_record':
+                Model = WeeklyRecord;
+                break;
             default:
                 return res.status(400).json({ msg: 'Invalid record type provided' });
         }
@@ -774,15 +785,20 @@ router.post('/weekly-record', [
 // @desc    Get weekly records for a location
 // @access  Private
 router.get('/weekly-record', auth, async (req, res) => {
+    console.log('GET /weekly-record route hit');
     try {
         const user = await User.findById(req.user.id);
+        console.log('User found:', { id: user.id, siteLocation: user.siteLocation });
+        
         const records = await WeeklyRecord.find({ location: user.siteLocation })
             .populate('createdBy', 'name')
             .populate('location', 'name')
             .sort({ weekCommencing: -1 });
+        
+        console.log('Weekly records found:', records.length);
         res.json(records);
     } catch (err) {
-        console.error(err.message);
+        console.error('Error in GET /weekly-record:', err.message);
         res.status(500).send('Server Error');
     }
 });

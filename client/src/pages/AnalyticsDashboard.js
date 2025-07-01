@@ -41,9 +41,11 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { recordsAPI, locationsAPI, analyticsAPI } from '../services/api';
+import { useSelector } from 'react-redux';
 
 const AnalyticsDashboard = () => {
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [locations, setLocations] = useState([]);
@@ -54,6 +56,8 @@ const AnalyticsDashboard = () => {
     temperatureTrends: [],
     recentAlerts: []
   });
+
+  const isAdmin = user?.role === 'admin';
 
   const COLORS = ['#4caf50', '#f44336', '#ff9800', '#2196f3'];
 
@@ -134,25 +138,36 @@ const AnalyticsDashboard = () => {
 
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-      {/* Location Filter */}
-      <Box sx={{ mb: 3 }}>
-        <FormControl sx={{ minWidth: 200 }}>
-          <InputLabel>Location</InputLabel>
-          <Select
-            value={selectedLocation}
-            label="Location"
-            onChange={(e) => setSelectedLocation(e.target.value)}
-            startAdornment={<LocationIcon sx={{ mr: 1, color: 'text.secondary' }} />}
-          >
-            <MenuItem value="all">All Locations</MenuItem>
-            {locations.map((location) => (
-              <MenuItem key={location._id} value={location._id}>
-                {location.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
+      {/* Location Filter - Only show for admin users */}
+      {isAdmin && (
+        <Box sx={{ mb: 3 }}>
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel>Location</InputLabel>
+            <Select
+              value={selectedLocation}
+              label="Location"
+              onChange={(e) => setSelectedLocation(e.target.value)}
+              startAdornment={<LocationIcon sx={{ mr: 1, color: 'text.secondary' }} />}
+            >
+              <MenuItem value="all">All Locations</MenuItem>
+              {locations.map((location) => (
+                <MenuItem key={location._id} value={location._id}>
+                  {location.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+      )}
+
+      {/* Show location info for kitchen users */}
+      {!isAdmin && locations.length > 0 && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" color="text.secondary">
+            Viewing analytics for: <strong>{locations[0]?.name}</strong>
+          </Typography>
+        </Box>
+      )}
 
       {/* Overview Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>

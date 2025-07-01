@@ -4,19 +4,42 @@ const Record = require('../models/Record');
 const Location = require('../models/Location');
 const auth = require('../middleware/auth');
 
+// Test route to verify analytics API is working
+router.get('/test', (req, res) => {
+  res.json({ message: 'Analytics API is working', timestamp: new Date().toISOString() });
+});
+
 // Get analytics data
 router.get('/', auth, async (req, res) => {
   try {
+    console.log('Analytics API called by user:', req.user?.id, 'role:', req.user?.role);
     const { location } = req.query;
+    console.log('Location filter:', location);
     
-    // Base query filter
+    // Base query filter - restrict by user role
     let locationFilter = {};
-    if (location && location !== 'all') {
-      locationFilter = { location: location };
+    let allowedLocations = [];
+    
+    if (req.user.role === 'admin') {
+      // Admin can see all locations or filter by specific location
+      if (location && location !== 'all') {
+        locationFilter = { location: location };
+      }
+      allowedLocations = await Location.find(); // Admin sees all locations
+    } else {
+      // Kitchen users can only see their assigned location
+      if (req.user.location) {
+        locationFilter = { location: req.user.location };
+        allowedLocations = await Location.find({ _id: req.user.location });
+      } else {
+        return res.status(403).json({ message: 'No location assigned to user' });
+      }
     }
+    
+    console.log('User role filter applied. Allowed locations:', allowedLocations.length);
 
-    // Get all locations for the user's organization or all if admin
-    const locations = await Location.find();
+    // Use the allowed locations based on user role
+    const locations = allowedLocations;
     
     // Get total record counts
     const totalRecords = await Record.countDocuments(locationFilter);
@@ -195,9 +218,16 @@ router.get('/', auth, async (req, res) => {
       recentAlerts: recentAlerts.slice(0, 5) // Limit to 5 most recent
     };
 
+    console.log('Analytics data successfully generated:', {
+      totalRecords: analytics.overview.totalRecords,
+      complianceRate: analytics.overview.complianceRate,
+      alertsCount: analytics.recentAlerts.length
+    });
+    
     res.json(analytics);
   } catch (error) {
     console.error('Analytics error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ message: 'Error fetching analytics data', error: error.message });
   }
 });

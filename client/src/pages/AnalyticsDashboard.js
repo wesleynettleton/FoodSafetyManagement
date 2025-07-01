@@ -20,11 +20,9 @@ import {
 import {
   ArrowBack as ArrowBackIcon,
   Analytics as AnalyticsIcon,
-  TrendingUp as TrendingUpIcon,
   Warning as WarningIcon,
   CheckCircle as CheckCircleIcon,
   LocationOn as LocationIcon,
-  Thermostat as ThermostatIcon,
   CalendarMonth as CalendarIcon
 } from '@mui/icons-material';
 import {
@@ -93,67 +91,11 @@ const AnalyticsDashboard = () => {
       setAnalytics(response.data);
     } catch (err) {
       console.error('Error fetching analytics:', err);
-      // Fallback to mock data if API fails
-      const mockAnalytics = generateMockAnalytics();
-      setAnalytics(mockAnalytics);
+      setError('Failed to fetch analytics data. Please check your connection.');
     }
   };
 
-  const generateMockAnalytics = () => {
-    const locationNames = locations.length > 0 
-      ? locations.map(loc => loc.name) 
-      : ['Main Kitchen', 'Secondary Kitchen', 'Prep Area', 'Storage'];
 
-    return {
-      overview: {
-        totalRecords: 1247,
-        complianceRate: 94.2,
-        criticalAlerts: 3,
-        locationsMonitored: locations.length || 4
-      },
-      compliance: locationNames.map(name => ({
-        location: name,
-        compliant: Math.floor(Math.random() * 50) + 70,
-        nonCompliant: Math.floor(Math.random() * 20) + 5,
-        pending: Math.floor(Math.random() * 10) + 2
-      })),
-      temperatureTrends: [
-        { date: '2024-01-01', avgTemp: 3.2, critical: 0 },
-        { date: '2024-01-02', avgTemp: 3.5, critical: 1 },
-        { date: '2024-01-03', avgTemp: 2.8, critical: 0 },
-        { date: '2024-01-04', avgTemp: 3.1, critical: 0 },
-        { date: '2024-01-05', avgTemp: 4.2, critical: 2 },
-        { date: '2024-01-06', avgTemp: 3.0, critical: 0 },
-        { date: '2024-01-07', avgTemp: 3.3, critical: 0 }
-      ],
-      recentAlerts: [
-        {
-          id: 1,
-          type: 'Temperature',
-          message: 'Fridge 2 temperature above 5°C',
-          location: 'Main Kitchen',
-          severity: 'high',
-          time: '2 hours ago'
-        },
-        {
-          id: 2,
-          type: 'Compliance',
-          message: 'Weekly checklist overdue',
-          location: 'Secondary Kitchen',
-          severity: 'medium',
-          time: '1 day ago'
-        },
-        {
-          id: 3,
-          type: 'Equipment',
-          message: 'Probe calibration due',
-          location: 'Prep Area',
-          severity: 'low',
-          time: '3 days ago'
-        }
-      ]
-    };
-  };
 
   const getLocationName = (locationId) => {
     if (locationId === 'all') return 'All Locations';

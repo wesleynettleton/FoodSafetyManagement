@@ -351,6 +351,12 @@ router.get('/', auth, async (req, res) => {
                 createdBy: user.id 
             }).populate('createdBy', 'name').sort({ createdAt: -1 });
             console.log('Cooling temperature records found:', coolingTemps.length);
+
+            const weeklyRecords = await WeeklyRecord.find({ 
+                location: user.siteLocation,
+                createdBy: user.id 
+            }).populate('createdBy', 'name').sort({ createdAt: -1 });
+            console.log('Weekly records found:', weeklyRecords.length);
             
             // First, migrate any temperature records that still use equipmentId
             const tempsToMigrate = await TemperatureRecord.find({ 
@@ -381,7 +387,7 @@ router.get('/', auth, async (req, res) => {
               .sort({ createdAt: -1 });
             console.log('Temperature records found:', temps.length);
 
-            allRecords = [...foodTemps, ...probeCals, ...deliveries, ...coolingTemps, ...temps];
+            allRecords = [...foodTemps, ...probeCals, ...deliveries, ...coolingTemps, ...weeklyRecords, ...temps];
         } else if (user.role === 'admin') {
             // For admin, show records for the selected location
             const targetLocation = locationId || user.siteLocation;
@@ -410,6 +416,12 @@ router.get('/', auth, async (req, res) => {
                 .populate('location', 'name')
                 .sort({ createdAt: -1 });
             console.log('Cooling temperature records found:', coolingTemps.length);
+
+            const weeklyRecords = await WeeklyRecord.find({ location: targetLocation })
+                .populate('createdBy', 'name')
+                .populate('location', 'name')
+                .sort({ createdAt: -1 });
+            console.log('Weekly records found:', weeklyRecords.length);
             
             // First, migrate any temperature records that still use equipmentId
             const tempsToMigrate = await TemperatureRecord.find({ 
@@ -438,7 +450,7 @@ router.get('/', auth, async (req, res) => {
                 .sort({ createdAt: -1 });
             console.log('Temperature records found:', temps.length);
 
-            allRecords = [...foodTemps, ...probeCals, ...deliveries, ...coolingTemps, ...temps];
+            allRecords = [...foodTemps, ...probeCals, ...deliveries, ...coolingTemps, ...weeklyRecords, ...temps];
         }
 
         // For any records that still have equipmentId, populate them manually
@@ -785,10 +797,25 @@ router.post('/weekly-record', [
 // @desc    Get weekly records for a location
 // @access  Private
 router.get('/weekly-record', auth, async (req, res) => {
-    console.log('GET /weekly-record route hit');
+    console.log('GET /weekly-record route hit, user ID:', req.user?.id);
     try {
+        if (!req.user || !req.user.id) {
+            console.error('No user ID in request');
+            return res.status(400).json({ msg: 'User authentication failed' });
+        }
+
         const user = await User.findById(req.user.id);
+        if (!user) {
+            console.error('User not found in database:', req.user.id);
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
         console.log('User found:', { id: user.id, siteLocation: user.siteLocation });
+        
+        if (!user.siteLocation) {
+            console.error('User has no siteLocation:', user.id);
+            return res.status(400).json({ msg: 'User has no assigned location' });
+        }
         
         const records = await WeeklyRecord.find({ location: user.siteLocation })
             .populate('createdBy', 'name')
@@ -798,8 +825,8 @@ router.get('/weekly-record', auth, async (req, res) => {
         console.log('Weekly records found:', records.length);
         res.json(records);
     } catch (err) {
-        console.error('Error in GET /weekly-record:', err.message);
-        res.status(500).send('Server Error');
+        console.error('Error in GET /weekly-record:', err);
+        res.status(500).json({ msg: 'Server Error', error: err.message });
     }
 });
 

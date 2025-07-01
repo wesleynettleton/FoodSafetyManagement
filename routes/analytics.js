@@ -100,12 +100,17 @@ router.get('/', auth, async (req, res) => {
     // Calculate compliance rate
     const totalRecentRecords = recentRecords.length;
     const compliantRecords = recentRecords.filter(record => {
-      if (record.type === 'food-temperature' || record.type === 'equipment-temperature' || record.type === 'delivery') {
-        return record.temperature >= -18 && record.temperature <= 5; // Safe temperature range
+      if (record.type === 'food-temperature') {
+        // Hot food should be ≥63°C (safe holding temperature)
+        return record.temperature >= 63;
+      }
+      if (record.type === 'equipment-temperature' || record.type === 'delivery') {
+        // Equipment and delivery temperatures should be cold (≤5°C) 
+        return record.temperature <= 5;
       }
       if (record.type === 'cooling-temperature') {
-        // For cooling records, check the final temperature after 2 hours
-        return record.temperatureAfter2Hours >= -18 && record.temperatureAfter2Hours <= 5;
+        // For cooling records, check the final temperature after 2 hours should be ≤5°C
+        return record.temperatureAfter2Hours <= 5;
       }
       if (record.type === 'weekly-record') {
         const checklist = record.checklistData;
@@ -137,11 +142,16 @@ router.get('/', auth, async (req, res) => {
         );
         
         const compliant = locationRecords.filter(record => {
-          if (record.type === 'food-temperature' || record.type === 'equipment-temperature' || record.type === 'delivery') {
-            return record.temperature >= -18 && record.temperature <= 5;
+          if (record.type === 'food-temperature') {
+            // Hot food should be ≥63°C (safe holding temperature)
+            return record.temperature >= 63;
+          }
+          if (record.type === 'equipment-temperature' || record.type === 'delivery') {
+            // Equipment and delivery temperatures should be cold (≤5°C) 
+            return record.temperature <= 5;
           }
           if (record.type === 'cooling-temperature') {
-            return record.temperatureAfter2Hours >= -18 && record.temperatureAfter2Hours <= 5;
+            return record.temperatureAfter2Hours <= 5;
           }
           if (record.type === 'weekly-record') {
             const checklist = record.checklistData;
@@ -204,7 +214,9 @@ router.get('/', auth, async (req, res) => {
         ? (temperatures.reduce((sum, temp) => sum + temp, 0) / temperatures.length).toFixed(1)
         : 0;
       
-      const critical = temperatures.filter(temp => temp > 5 || temp < -18).length;
+      // For simplicity, mark temperatures in danger zone (5-63°C) as critical
+      // This assumes most temperatures are food temperatures
+      const critical = temperatures.filter(temp => temp > 5 && temp < 63).length;
 
       temperatureTrends.push({
         date: dayStart.toISOString().split('T')[0],
@@ -217,8 +229,13 @@ router.get('/', auth, async (req, res) => {
     const recentAlerts = [];
     
     // Temperature alerts
-    const highTempRecords = recentRecords.filter(record => {
-      if (record.type === 'food-temperature' || record.type === 'equipment-temperature' || record.type === 'delivery') {
+    const alertRecords = recentRecords.filter(record => {
+      if (record.type === 'food-temperature') {
+        // Alert if food temperature is below 63°C (danger zone)
+        return record.temperature < 63;
+      }
+      if (record.type === 'equipment-temperature' || record.type === 'delivery') {
+        // Alert if equipment/delivery temperature is above 5°C
         return record.temperature > 5;
       }
       if (record.type === 'cooling-temperature') {
@@ -227,7 +244,7 @@ router.get('/', auth, async (req, res) => {
       return false;
     }).slice(0, 3);
 
-    highTempRecords.forEach((record, index) => {
+    alertRecords.forEach((record, index) => {
       const temp = record.temperature || record.temperatureAfter2Hours;
       const typeNames = {
         'food-temperature': 'Food',
@@ -236,12 +253,21 @@ router.get('/', auth, async (req, res) => {
         'cooling-temperature': 'Cooling'
       };
       
+      let message;
+      if (record.type === 'food-temperature') {
+        message = `Food temperature below 63°C (${temp}°C) - danger zone`;
+      } else if (record.type === 'cooling-temperature') {
+        message = `Cooling temperature above 5°C (${temp}°C)`;
+      } else {
+        message = `${typeNames[record.type] || 'Temperature'} above 5°C (${temp}°C)`;
+      }
+      
       recentAlerts.push({
         id: `temp-${index}`,
         type: 'Temperature',
-        message: `${typeNames[record.type] || 'Temperature'} above 5°C (${temp}°C)`,
+        message: message,
         location: record.location?.name || 'Unknown',
-        severity: temp > 10 ? 'high' : 'medium',
+        severity: record.type === 'food-temperature' && temp < 40 ? 'high' : 'medium',
         time: getRelativeTime(record.createdAt)
       });
     });

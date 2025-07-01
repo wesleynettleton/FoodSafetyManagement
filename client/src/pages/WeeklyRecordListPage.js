@@ -28,7 +28,8 @@ import {
   ArrowBack as ArrowBackIcon,
   CalendarMonth as WeeklyIcon,
   Visibility as ViewIcon,
-  ExpandMore as ExpandMoreIcon
+  ExpandMore as ExpandMoreIcon,
+  Delete as DeleteIcon
 } from '@mui/icons-material';
 import { recordsAPI } from '../services/api';
 
@@ -39,6 +40,7 @@ const WeeklyRecordListPage = () => {
   const [error, setError] = useState('');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     fetchRecords();
@@ -65,6 +67,32 @@ const WeeklyRecordListPage = () => {
   const handleCloseDialog = () => {
     setViewDialogOpen(false);
     setSelectedRecord(null);
+  };
+
+  const handleDeleteRecord = async (recordId) => {
+    if (!window.confirm('Are you sure you want to delete this weekly record? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setDeleteLoading(true);
+      await recordsAPI.delete('weekly_record', recordId);
+      
+      // Remove the record from the local state
+      setRecords(records.filter(record => record._id !== recordId));
+      
+      // Close the dialog if this record was being viewed
+      if (selectedRecord && selectedRecord._id === recordId) {
+        handleCloseDialog();
+      }
+      
+      // You could add a success message here if desired
+    } catch (err) {
+      console.error('Error deleting record:', err);
+      setError('Failed to delete record. Please try again.');
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const checklistSections = [
@@ -205,14 +233,26 @@ const WeeklyRecordListPage = () => {
                     })}
                   </TableCell>
                   <TableCell align="center">
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<ViewIcon />}
-                      onClick={() => handleViewRecord(record)}
-                    >
-                      View
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<ViewIcon />}
+                        onClick={() => handleViewRecord(record)}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                        onClick={() => handleDeleteRecord(record._id)}
+                        disabled={deleteLoading}
+                      >
+                        Delete
+                      </Button>
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))
@@ -292,7 +332,16 @@ const WeeklyRecordListPage = () => {
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ justifyContent: 'space-between' }}>
+          <Button 
+            onClick={() => handleDeleteRecord(selectedRecord._id)}
+            variant="outlined"
+            color="error"
+            startIcon={<DeleteIcon />}
+            disabled={deleteLoading}
+          >
+            {deleteLoading ? 'Deleting...' : 'Delete Record'}
+          </Button>
           <Button onClick={handleCloseDialog} variant="contained">
             Close
           </Button>

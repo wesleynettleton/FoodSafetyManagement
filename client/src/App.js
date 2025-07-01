@@ -30,6 +30,7 @@ import EquipmentManagementPage from './pages/EquipmentManagementPage';
 import InformationPage from './pages/InformationPage';
 import CoolingTemperatureAddPage from './pages/CoolingTemperatureAddPage';
 import CoolingTemperatureListPage from './pages/CoolingTemperatureListPage';
+import TakeRecordsPage from './pages/TakeRecordsPage';
 
 const theme = createTheme({
   palette: {
@@ -183,6 +184,15 @@ function App() {
               element={
                 <PrivateRoute>
                   <InformationPage />
+                </PrivateRoute>
+              }
+            />
+            {/* Take Records Page Route */}
+            <Route
+              path="/take-records"
+              element={
+                <PrivateRoute>
+                  <TakeRecordsPage />
                 </PrivateRoute>
               }
             />

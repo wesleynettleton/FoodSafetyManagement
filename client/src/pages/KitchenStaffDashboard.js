@@ -12,11 +12,9 @@ import {
 } from '@mui/material';
 import {
   ListAlt as ListAltIcon,
-  Thermostat as ThermostatIcon,
-  LocalShipping as LocalShippingIcon,
   Build as BuildIcon,
   Info as InfoIcon,
-  Timer as TimerIcon
+  Assignment as AssignmentIcon
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
@@ -40,34 +38,10 @@ const KitchenStaffDashboard = () => {
       path: '/my-records'
     },
     {
-      title: 'Log Food Temperature',
-      description: 'Add a new food temperature check.',
-      icon: <ThermostatIcon sx={{ fontSize: 40 }} />,
-      path: '/records/food-temperature/add'
-    },
-    {
-      title: 'Log Cooling Temperature',
-      description: 'Record food cooling process temperatures.',
-      icon: <TimerIcon sx={{ fontSize: 40 }} />,
-      path: '/records/cooling-temperature/add'
-    },
-    {
-      title: 'Log Delivery Temperature',
-      description: 'Record temperatures for incoming deliveries.',
-      icon: <LocalShippingIcon sx={{ fontSize: 40 }} />,
-      path: '/records/delivery/add'
-    },
-    {
-      title: 'Log Equipment Temperature',
-      description: 'Record fridge/freezer temperatures.',
-      icon: <ThermostatIcon sx={{ fontSize: 40 }} />,
-      path: '/records/equipment-temperature/add'
-    },
-    {
-      title: 'Log Probe Calibration',
-      description: 'Add a new probe calibration entry.',
-      icon: <BuildIcon sx={{ fontSize: 40 }} />,
-      path: '/records/probe-calibration/add'
+      title: 'Take Records',
+      description: 'Log temperatures and safety checks.',
+      icon: <AssignmentIcon sx={{ fontSize: 40 }} />,
+      path: '/take-records'
     },
     {
       title: 'Manage Equipment',
@@ -142,7 +116,9 @@ const KitchenStaffDashboard = () => {
                     ? 'Add/Remove Equipment'
                     : item.title === 'Information' || item.title.startsWith('View')
                       ? 'View' 
-                      : 'Log Record'}
+                      : item.title === 'Take Records'
+                        ? 'Start Recording'
+                        : 'Log Record'}
                 </Button>
               </CardActions>
             </Card>

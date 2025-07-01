@@ -38,7 +38,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // MongoDB Connection with retry logic
-console.log('MONGODB_URI:', process.env.MONGODB_URI); // DEBUG: Print the MongoDB URI
+console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'Set' : 'Not set'); // Don't log the actual URI for security
 const connectDB = async () => {
   try {
     if (!process.env.MONGODB_URI && process.env.NODE_ENV === 'production') {
@@ -53,17 +53,21 @@ const connectDB = async () => {
     await mongoose.connect(MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000,
-      retryWrites: true
+      serverSelectionTimeoutMS: 10000, // Increased timeout
+      retryWrites: true,
+      maxPoolSize: 10,
+      minPoolSize: 1
     });
-    console.log('MongoDB Connected');
+    console.log('MongoDB Connected Successfully');
   } catch (err) {
-    console.error('MongoDB Connection Error:', err);
+    console.error('MongoDB Connection Error:', err.message);
     if (process.env.NODE_ENV === 'production') {
       // In production, exit if we can't connect to the database
+      console.error('Fatal: Cannot connect to MongoDB in production. Exiting...');
       process.exit(1);
     } else {
       // In development, retry connection after 5 seconds
+      console.log('Retrying MongoDB connection in 5 seconds...');
       setTimeout(connectDB, 5000);
     }
   }
@@ -124,7 +128,17 @@ app.use((err, req, res, next) => {
 
 // Add a health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', environment: process.env.NODE_ENV });
+  res.status(200).json({ 
+    status: 'ok', 
+    environment: process.env.NODE_ENV,
+    timestamp: new Date().toISOString(),
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
+});
+
+// Add a simple test endpoint
+app.get('/api/test', (req, res) => {
+  res.status(200).json({ message: 'API is working' });
 });
 
 const PORT = process.env.PORT || 5001;

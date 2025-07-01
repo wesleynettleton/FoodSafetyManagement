@@ -50,6 +50,7 @@ const AnalyticsDashboard = () => {
   const [error, setError] = useState('');
   const [locations, setLocations] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState('all');
+  const [userLocationName, setUserLocationName] = useState('');
   const [analytics, setAnalytics] = useState({
     overview: {},
     compliance: [],
@@ -69,7 +70,7 @@ const AnalyticsDashboard = () => {
     try {
       setLoading(true);
       await Promise.all([
-        fetchLocations(),
+        isAdmin ? fetchLocations() : Promise.resolve(),
         fetchAnalyticsData()
       ]);
     } catch (err) {
@@ -93,6 +94,11 @@ const AnalyticsDashboard = () => {
     try {
       const response = await analyticsAPI.getAnalytics(selectedLocation);
       setAnalytics(response.data);
+      
+      // For kitchen users, get the location name from the analytics compliance data
+      if (!isAdmin && response.data?.compliance && response.data.compliance.length > 0) {
+        setUserLocationName(response.data.compliance[0].location);
+      }
     } catch (err) {
       console.error('Error fetching analytics:', err);
       setError('Failed to fetch analytics data. Please check your connection.');
@@ -161,10 +167,10 @@ const AnalyticsDashboard = () => {
       )}
 
       {/* Show location info for kitchen users */}
-      {!isAdmin && locations.length > 0 && (
+      {!isAdmin && userLocationName && (
         <Box sx={{ mb: 3 }}>
           <Typography variant="subtitle1" color="text.secondary">
-            Viewing analytics for: <strong>{locations[0]?.name}</strong>
+            Viewing analytics for: <strong>{userLocationName}</strong>
           </Typography>
         </Box>
       )}

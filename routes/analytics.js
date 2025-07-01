@@ -16,11 +16,24 @@ router.get('/', auth, async (req, res) => {
     const { location } = req.query;
     console.log('Location filter:', location);
     
+    // Fetch the full user object to get siteLocation
+    const User = require('../models/User');
+    const fullUser = await User.findById(req.user.id).populate('siteLocation');
+    if (!fullUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    console.log('Full user data:', {
+      id: fullUser._id,
+      role: fullUser.role,
+      siteLocation: fullUser.siteLocation
+    });
+    
     // Base query filter - restrict by user role
     let locationFilter = {};
     let allowedLocations = [];
     
-    if (req.user.role === 'admin') {
+    if (fullUser.role === 'admin') {
       // Admin can see all locations or filter by specific location
       if (location && location !== 'all') {
         locationFilter = { location: location };
@@ -28,9 +41,9 @@ router.get('/', auth, async (req, res) => {
       allowedLocations = await Location.find(); // Admin sees all locations
     } else {
       // Kitchen users can only see their assigned location
-      if (req.user.location) {
-        locationFilter = { location: req.user.location };
-        allowedLocations = await Location.find({ _id: req.user.location });
+      if (fullUser.siteLocation) {
+        locationFilter = { location: fullUser.siteLocation._id };
+        allowedLocations = [fullUser.siteLocation];
       } else {
         return res.status(403).json({ message: 'No location assigned to user' });
       }

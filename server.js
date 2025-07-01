@@ -128,14 +128,28 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Add a health check endpoint
+// Add health check endpoints for Render
 app.get('/health', (req, res) => {
+  const mongoStatus = mongoose.connection.readyState;
+  const mongoStatusText = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting'
+  }[mongoStatus] || 'unknown';
+
   res.status(200).json({ 
     status: 'ok', 
     environment: process.env.NODE_ENV,
     timestamp: new Date().toISOString(),
-    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    mongodb: mongoStatusText,
+    uptime: process.uptime()
   });
+});
+
+// Alternative health check route (some services use this)
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'healthy' });
 });
 
 // Add a simple test endpoint
@@ -144,6 +158,35 @@ app.get('/api/test', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
+
+// Start server with better error handling
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  console.log(`Health check available at: http://localhost:${PORT}/health`);
+});
+
+// Handle server startup errors
+server.on('error', (error) => {
+  console.error('Server startup error:', error);
+  if (error.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use`);
+  }
+  process.exit(1);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    mongoose.connection.close();
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  server.close(() => {
+    mongoose.connection.close();
+    process.exit(0);
+  });
 }); 

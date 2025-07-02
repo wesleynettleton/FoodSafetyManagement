@@ -102,7 +102,8 @@ router.get('/', auth, async (req, res) => {
     const compliantRecords = recentRecords.filter(record => {
       if (record.type === 'food-temperature') {
         // Hot food should be ≥63°C (safe holding temperature)
-        return record.temperature >= 63;
+        // BUT if temperature is ≤10°C, it's likely a cold storage temp and should be compliant
+        return record.temperature >= 63 || record.temperature <= 10;
       }
       if (record.type === 'equipment-temperature' || record.type === 'delivery') {
         // Equipment and delivery temperatures should be cold (≤5°C) 
@@ -144,7 +145,8 @@ router.get('/', auth, async (req, res) => {
         const compliant = locationRecords.filter(record => {
           if (record.type === 'food-temperature') {
             // Hot food should be ≥63°C (safe holding temperature)
-            return record.temperature >= 63;
+            // BUT if temperature is ≤10°C, it's likely a cold storage temp and should be compliant
+            return record.temperature >= 63 || record.temperature <= 10;
           }
           if (record.type === 'equipment-temperature' || record.type === 'delivery') {
             // Equipment and delivery temperatures should be cold (≤5°C) 
@@ -230,8 +232,9 @@ router.get('/', auth, async (req, res) => {
     // Temperature alerts
     const alertRecords = recentRecords.filter(record => {
       if (record.type === 'food-temperature') {
-        // Alert if food temperature is below 63°C (danger zone)
-        return record.temperature < 63;
+        // Only alert for hot food temperatures below 63°C if they're actually meant to be hot
+        // Skip temperatures that are clearly fridge/freezer temps (below 10°C)
+        return record.temperature < 63 && record.temperature > 10;
       }
       if (record.type === 'equipment-temperature' || record.type === 'delivery') {
         // Alert if equipment/delivery temperature is above 5°C
@@ -254,7 +257,7 @@ router.get('/', auth, async (req, res) => {
       
       let message;
       if (record.type === 'food-temperature') {
-        message = `Food temperature below 63°C (${temp}°C) - danger zone`;
+        message = `Hot food temperature in danger zone (${temp}°C) - should be ≥63°C`;
       } else if (record.type === 'cooling-temperature') {
         message = `Cooling temperature above 5°C (${temp}°C)`;
       } else {

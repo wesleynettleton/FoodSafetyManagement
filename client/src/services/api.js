@@ -151,7 +151,8 @@ export const analyticsAPI = {
     return api.get(`/analytics/compliance-report/pdf?${params}`, {
       responseType: 'blob'
     });
-  }
+  },
+  getProbeCalibrationStatus: () => api.get('/analytics/probe-calibration-status')
 };
 
 export default api;

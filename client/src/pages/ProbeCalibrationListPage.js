@@ -182,7 +182,12 @@ const ProbeCalibrationListPage = () => {
                 <TableRow key={record._id} hover>
                   {/* Adjust these based on actual record fields for probe calibration */}
                   <TableCell>{record.probeId}</TableCell>
-                  <TableCell>{record.temperature}°C</TableCell>
+                  <TableCell>
+                    {record.temperature !== null && record.temperature !== undefined && record.temperature !== '' 
+                      ? `${record.temperature}°C` 
+                      : '-'
+                    }
+                  </TableCell>
                   <TableCell>{record.isCalibrated ? 'Yes' : 'No'}</TableCell>
                   <TableCell>{record.createdBy?.name || 'N/A'}</TableCell> 
                   <TableCell>{new Date(record.createdAt).toLocaleString()}</TableCell>

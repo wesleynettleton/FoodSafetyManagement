@@ -79,7 +79,7 @@ export const getTemperatureStatus = (record) => {
 };
 
 export const getTemperatureTooltip = (record) => {
-  if (!record.temperature) return 'No temperature recorded';
+  if (record.temperature === null || record.temperature === undefined || record.temperature === '') return 'No temperature recorded';
 
   if (record.type === 'fridge_temperature') {
     const temp = record.temperature;
@@ -156,7 +156,7 @@ export const getTemperatureTooltip = (record) => {
 };
 
 export const getTemperatureLabel = (record) => {
-  if (!record.temperature) return '-';
+  if (record.temperature === null || record.temperature === undefined || record.temperature === '') return '-';
   
   let standard = '';
   if (record.type === 'fridge_temperature') {

@@ -117,7 +117,7 @@ const getTemperatureColor = (record) => {
 };
 
 const getTemperatureLabel = (record) => {
-  if (!record.temperature) return '-';
+  if (record.temperature === null || record.temperature === undefined || record.temperature === '') return '-';
   
   let standard = '';
   if (record.type === 'fridge_temperature') {
@@ -163,7 +163,7 @@ const getRecordTypeDetails = (record) => {
 };
 
 const getTemperatureStatus = (record) => {
-  if (!record.temperature) return { status: 'unknown', color: 'text.secondary' };
+  if (record.temperature === null || record.temperature === undefined || record.temperature === '') return { status: 'unknown', color: 'text.secondary' };
 
   if (record.type === 'fridge_temperature') {
     const temp = record.temperature;
@@ -203,7 +203,7 @@ const getTemperatureStatus = (record) => {
 };
 
 const getTemperatureTooltip = (record) => {
-  if (!record.temperature) return 'No temperature recorded';
+  if (record.temperature === null || record.temperature === undefined || record.temperature === '') return 'No temperature recorded';
 
   if (record.type === 'fridge_temperature') {
     const temp = record.temperature;

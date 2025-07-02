@@ -16,6 +16,41 @@ router.get('/test', (req, res) => {
   res.json({ message: 'Analytics API is working', timestamp: new Date().toISOString() });
 });
 
+// Get probe calibration status for all locations
+router.get('/probe-calibration-status', auth, async (req, res) => {
+  try {
+    const User = require('../models/User');
+    const fullUser = await User.findById(req.user.id).populate('siteLocation');
+    
+    // Set up location filter based on user role
+    let locations;
+    if (fullUser.role === 'admin') {
+      locations = await Location.find();
+    } else {
+      if (fullUser.siteLocation) {
+        locations = [fullUser.siteLocation];
+      } else {
+        return res.status(403).json({ message: 'No location assigned to user' });
+      }
+    }
+
+    const probeCalibrationStatus = await getProbeCalibrationStatus(locations);
+    
+    res.json({
+      locations: probeCalibrationStatus,
+      summary: {
+        totalProbes: probeCalibrationStatus.reduce((sum, loc) => sum + loc.probes.length, 0),
+        overdue: probeCalibrationStatus.reduce((sum, loc) => sum + loc.overdue, 0),
+        dueSoon: probeCalibrationStatus.reduce((sum, loc) => sum + loc.dueSoon, 0),
+        upToDate: probeCalibrationStatus.reduce((sum, loc) => sum + loc.upToDate, 0)
+      }
+    });
+  } catch (error) {
+    console.error('Probe calibration status error:', error);
+    res.status(500).json({ message: 'Error fetching probe calibration status' });
+  }
+});
+
 // Get analytics data
 router.get('/', auth, async (req, res) => {
   try {
@@ -331,17 +366,9 @@ router.get('/', auth, async (req, res) => {
       });
     });
 
-    // Add some mock equipment alerts if we have room
-    if (recentAlerts.length < 5) {
-      recentAlerts.push({
-        id: 'equipment-1',
-        type: 'Equipment',
-        message: 'Probe calibration due',
-        location: locations[0]?.name || 'Kitchen',
-        severity: 'low',
-        time: '3 days ago'
-      });
-    }
+    // Check for probe calibrations that are due (monthly schedule)
+    const probeCalibrationAlerts = await checkProbeCalibrationsDue(locations);
+    recentAlerts.push(...probeCalibrationAlerts);
 
     const analytics = {
       overview: {
@@ -998,6 +1025,176 @@ function getRelativeTime(date) {
   } else {
     return `${days} day${days !== 1 ? 's' : ''} ago`;
   }
+}
+
+// Check for probe calibrations that are due (monthly schedule)
+async function checkProbeCalibrationsDue(locations) {
+  const alerts = [];
+  const CALIBRATION_INTERVAL_DAYS = 30; // Monthly calibration required
+  const WARNING_DAYS = 7; // Warn 7 days before due
+  
+  try {
+    for (const location of locations) {
+      // Get all unique probe IDs for this location
+      const probesWithCalibrations = await ProbeCalibration.aggregate([
+        { $match: { location: location._id } },
+        { 
+          $group: {
+            _id: "$probeId",
+            lastCalibration: { $max: "$createdAt" },
+            location: { $first: "$location" }
+          }
+        }
+      ]);
+
+      // Check each probe's calibration status
+      for (const probe of probesWithCalibrations) {
+        const daysSinceCalibration = Math.floor(
+          (new Date() - new Date(probe.lastCalibration)) / (1000 * 60 * 60 * 24)
+        );
+        
+        const daysUntilDue = CALIBRATION_INTERVAL_DAYS - daysSinceCalibration;
+        
+        // Create alert if calibration is due or overdue
+        if (daysUntilDue <= WARNING_DAYS) {
+          let severity, message, time;
+          
+          if (daysUntilDue <= 0) {
+            // Overdue
+            const daysOverdue = Math.abs(daysUntilDue);
+            severity = daysOverdue > 7 ? 'high' : 'medium';
+            message = `Probe ${probe._id} calibration overdue`;
+            time = daysOverdue === 0 ? 'Due today' : `${daysOverdue} day${daysOverdue !== 1 ? 's' : ''} overdue`;
+          } else {
+            // Due soon
+            severity = 'low';
+            message = `Probe ${probe._id} calibration due soon`;
+            time = daysUntilDue === 1 ? 'Due tomorrow' : `Due in ${daysUntilDue} days`;
+          }
+          
+          alerts.push({
+            id: `probe-cal-${probe._id}-${location._id}`,
+            type: 'Equipment',
+            message,
+            location: location.name,
+            severity,
+            time,
+            metadata: {
+              probeId: probe._id,
+              lastCalibration: probe.lastCalibration,
+              daysSinceCalibration,
+              daysUntilDue
+            }
+          });
+        }
+      }
+
+      // Check for locations that have no probe calibrations at all
+      const totalProbeRecords = await ProbeCalibration.countDocuments({ location: location._id });
+      if (totalProbeRecords === 0) {
+        alerts.push({
+          id: `no-probe-cal-${location._id}`,
+          type: 'Equipment',
+          message: 'No probe calibrations recorded',
+          location: location.name,
+          severity: 'medium',
+          time: 'Action required',
+          metadata: {
+            reason: 'no_calibrations'
+          }
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error checking probe calibrations:', error);
+  }
+
+  return alerts;
+}
+
+// Get detailed probe calibration status for locations
+async function getProbeCalibrationStatus(locations) {
+  const CALIBRATION_INTERVAL_DAYS = 30; // Monthly calibration required
+  const WARNING_DAYS = 7; // Warn 7 days before due
+  const statusByLocation = [];
+
+  try {
+    for (const location of locations) {
+      // Get all unique probe IDs for this location with their last calibration
+      const probesWithCalibrations = await ProbeCalibration.aggregate([
+        { $match: { location: location._id } },
+        { 
+          $group: {
+            _id: "$probeId",
+            lastCalibration: { $max: "$createdAt" },
+            calibrationCount: { $sum: 1 },
+            location: { $first: "$location" }
+          }
+        },
+        { $sort: { lastCalibration: -1 } }
+      ]);
+
+      const probeStatuses = [];
+      let overdue = 0;
+      let dueSoon = 0;
+      let upToDate = 0;
+
+      for (const probe of probesWithCalibrations) {
+        const daysSinceCalibration = Math.floor(
+          (new Date() - new Date(probe.lastCalibration)) / (1000 * 60 * 60 * 24)
+        );
+        
+        const daysUntilDue = CALIBRATION_INTERVAL_DAYS - daysSinceCalibration;
+        
+        let status, nextDueDate, priority;
+        
+        if (daysUntilDue <= 0) {
+          status = 'overdue';
+          priority = 'high';
+          overdue++;
+        } else if (daysUntilDue <= WARNING_DAYS) {
+          status = 'due_soon';
+          priority = 'medium';
+          dueSoon++;
+        } else {
+          status = 'up_to_date';
+          priority = 'low';
+          upToDate++;
+        }
+
+        // Calculate next due date
+        const nextDue = new Date(probe.lastCalibration);
+        nextDue.setDate(nextDue.getDate() + CALIBRATION_INTERVAL_DAYS);
+
+        probeStatuses.push({
+          probeId: probe._id,
+          lastCalibration: probe.lastCalibration,
+          nextDueDate: nextDue,
+          daysSinceCalibration,
+          daysUntilDue,
+          status,
+          priority,
+          calibrationCount: probe.calibrationCount
+        });
+      }
+
+      statusByLocation.push({
+        locationId: location._id,
+        locationName: location.name,
+        probes: probeStatuses,
+        summary: {
+          total: probeStatuses.length,
+          overdue,
+          dueSoon,
+          upToDate
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error getting probe calibration status:', error);
+  }
+
+  return statusByLocation;
 }
 
 module.exports = router; 

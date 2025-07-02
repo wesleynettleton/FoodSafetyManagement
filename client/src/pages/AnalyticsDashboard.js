@@ -253,7 +253,7 @@ const AnalyticsDashboard = () => {
       {/* Charts Row */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {/* Compliance by Location */}
-        <Grid item xs={12} md={8}>
+        <Grid item xs={12}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -270,40 +270,6 @@ const AnalyticsDashboard = () => {
                   <Bar dataKey="nonCompliant" fill="#f44336" name="Non-Compliant" />
                   <Bar dataKey="pending" fill="#ff9800" name="Pending" />
                 </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Compliance Distribution */}
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Overall Distribution
-              </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'Compliant', value: 89, fill: '#4caf50' },
-                      { name: 'Non-Compliant', value: 8, fill: '#f44336' },
-                      { name: 'Pending', value: 3, fill: '#ff9800' }
-                    ]}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {analytics.compliance.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>

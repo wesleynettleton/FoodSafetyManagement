@@ -512,24 +512,226 @@ router.get('/compliance-report', auth, async (req, res) => {
 // PDF Export endpoint
 router.get('/compliance-report/pdf', auth, async (req, res) => {
   try {
-    // This would integrate with a PDF generation library
-    // For now, return the same data with PDF headers
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename=compliance-report.pdf');
+    const { startDate, endDate, location, reportType = 'full' } = req.query;
     
-    // In a real implementation, you'd use libraries like:
-    // - puppeteer
-    // - jsPDF
-    // - PDFKit
-    // - html-pdf
+    // Get the same report data
+    const User = require('../models/User');
+    const fullUser = await User.findById(req.user.id).populate('siteLocation');
     
-    res.json({ message: 'PDF generation would be implemented here' });
+    // Set up location filter based on user role
+    let locationFilter = {};
+    let allowedLocations = [];
+    
+    if (fullUser.role === 'admin') {
+      if (location && location !== 'all') {
+        locationFilter = { location: location };
+        const loc = await Location.findById(location);
+        allowedLocations = loc ? [loc] : [];
+      } else {
+        allowedLocations = await Location.find();
+      }
+    } else {
+      if (fullUser.siteLocation) {
+        locationFilter = { location: fullUser.siteLocation._id };
+        allowedLocations = [fullUser.siteLocation];
+      } else {
+        return res.status(403).json({ message: 'No location assigned to user' });
+      }
+    }
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    
+    const dateFilter = {
+      ...locationFilter,
+      createdAt: { $gte: start, $lte: end }
+    };
+    
+    // Get all the report data
+    const [foodTemps, probeCalibrations, deliveries, tempRecords, coolingTemps, weeklyRecords] = await Promise.all([
+      FoodTemperature.find(dateFilter).populate('location', 'name').populate('createdBy', 'username').sort({ createdAt: -1 }),
+      ProbeCalibration.find(dateFilter).populate('location', 'name').populate('createdBy', 'username').sort({ createdAt: -1 }),
+      Delivery.find(dateFilter).populate('location', 'name').populate('createdBy', 'username').sort({ createdAt: -1 }),
+      TemperatureRecord.find(dateFilter).populate('location', 'name').populate('createdBy', 'username').sort({ createdAt: -1 }),
+      CoolingTemperature.find(dateFilter).populate('location', 'name').populate('createdBy', 'username').sort({ createdAt: -1 }),
+      WeeklyRecord.find(dateFilter).populate('location', 'name').populate('createdBy', 'username').sort({ createdAt: -1 })
+    ]);
+    
+    // Analyze compliance
+    const complianceAnalysis = {
+      foodTemperature: analyzeTemperatureCompliance(foodTemps, 'food'),
+      equipmentTemperature: analyzeTemperatureCompliance(tempRecords, 'equipment'),
+      deliveryTemperature: analyzeTemperatureCompliance(deliveries, 'delivery'),
+      coolingTemperature: analyzeCoolingCompliance(coolingTemps),
+      probeCalibration: analyzeProbeCompliance(probeCalibrations),
+      weeklyChecklists: analyzeWeeklyCompliance(weeklyRecords)
+    };
+    
+    const totalRecords = foodTemps.length + tempRecords.length + deliveries.length + 
+                        coolingTemps.length + probeCalibrations.length + weeklyRecords.length;
+    
+    const totalCompliant = Object.values(complianceAnalysis).reduce((sum, analysis) => 
+      sum + analysis.compliant, 0);
+    
+    const overallComplianceRate = totalRecords > 0 ? 
+      ((totalCompliant / totalRecords) * 100).toFixed(2) : 100;
+    
+    const violations = generateViolationsSummary(complianceAnalysis);
+    
+    // Generate HTML for PDF
+    const html = generatePDFHTML({
+      reportMetadata: {
+        generatedAt: new Date().toISOString(),
+        reportPeriod: { startDate: start.toISOString(), endDate: end.toISOString() },
+        locations: allowedLocations.map(loc => ({ id: loc._id, name: loc.name })),
+        generatedBy: { username: fullUser.username, role: fullUser.role }
+      },
+      executiveSummary: {
+        totalRecords,
+        overallComplianceRate: parseFloat(overallComplianceRate),
+        totalViolations: violations.length,
+        criticalViolations: violations.filter(v => v.severity === 'critical').length
+      },
+      complianceAnalysis,
+      violations
+    });
+    
+    // Set headers for file download
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Disposition', `attachment; filename=compliance-report-${startDate}-to-${endDate}.html`);
+    
+    res.send(html);
     
   } catch (error) {
     console.error('PDF export error:', error);
-    res.status(500).json({ message: 'Error generating PDF report' });
+    res.status(500).json({ message: 'Error generating report file' });
   }
 });
+
+// Generate HTML for PDF/Print
+function generatePDFHTML(reportData) {
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Compliance Report</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .summary { display: flex; justify-content: space-around; margin: 20px 0; }
+        .summary-item { text-align: center; }
+        .summary-value { font-size: 24px; font-weight: bold; }
+        .section { margin: 20px 0; }
+        .section h2 { color: #1976d2; border-bottom: 2px solid #1976d2; padding-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f5f5f5; }
+        .violation { margin: 10px 0; padding: 10px; border-left: 4px solid #f44336; background-color: #fef7f7; }
+        .critical { border-left-color: #d32f2f; }
+        .major { border-left-color: #f57c00; }
+        .minor { border-left-color: #1976d2; }
+        @media print { 
+          .section { page-break-inside: avoid; }
+          .violation { page-break-inside: avoid; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>Food Safety Compliance Report</h1>
+        <p><strong>Period:</strong> ${formatDate(reportData.reportMetadata.reportPeriod.startDate)} - ${formatDate(reportData.reportMetadata.reportPeriod.endDate)}</p>
+        <p><strong>Location(s):</strong> ${reportData.reportMetadata.locations.map(l => l.name).join(', ')}</p>
+        <p><strong>Generated by:</strong> ${reportData.reportMetadata.generatedBy.username} (${reportData.reportMetadata.generatedBy.role})</p>
+        <p><strong>Generated:</strong> ${formatDate(reportData.reportMetadata.generatedAt)}</p>
+      </div>
+      
+      <div class="section">
+        <h2>Executive Summary</h2>
+        <div class="summary">
+          <div class="summary-item">
+            <div class="summary-value">${reportData.executiveSummary.totalRecords}</div>
+            <div>Total Records</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-value" style="color: #4caf50;">${reportData.executiveSummary.overallComplianceRate}%</div>
+            <div>Compliance Rate</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-value" style="color: #f44336;">${reportData.executiveSummary.totalViolations}</div>
+            <div>Total Violations</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-value" style="color: #d32f2f;">${reportData.executiveSummary.criticalViolations}</div>
+            <div>Critical Violations</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="section">
+        <h2>Compliance Analysis by Category</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Total Records</th>
+              <th>Compliant</th>
+              <th>Violations</th>
+              <th>Compliance Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${Object.entries(reportData.complianceAnalysis).map(([category, analysis]) => `
+              <tr>
+                <td>${category.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</td>
+                <td>${analysis.total}</td>
+                <td>${analysis.compliant}</td>
+                <td>${analysis.violations.length}</td>
+                <td style="color: ${parseFloat(analysis.complianceRate) >= 95 ? '#4caf50' : parseFloat(analysis.complianceRate) >= 85 ? '#ff9800' : '#f44336'}">${analysis.complianceRate}%</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      
+      ${reportData.violations.length > 0 ? `
+        <div class="section">
+          <h2>Violations Summary</h2>
+          ${reportData.violations.map(violation => `
+            <div class="violation ${violation.severity}">
+              <h4>${violation.category.toUpperCase()} - ${violation.location}</h4>
+              <p><strong>Severity:</strong> ${violation.severity.toUpperCase()}</p>
+              <p><strong>Date:</strong> ${formatDate(violation.recordedAt)}</p>
+              <p><strong>Recorded by:</strong> ${violation.recordedBy}</p>
+              ${violation.temperature ? `<p><strong>Temperature:</strong> ${violation.temperature}°C (Expected: ${violation.expectedRange})</p>` : ''}
+              ${violation.deviation ? `<p><strong>Calibration Deviation:</strong> ${violation.deviation}°C</p>` : ''}
+              ${violation.failedItems ? `<p><strong>Failed Items:</strong> ${violation.failedItems.join(', ')}</p>` : ''}
+              ${violation.notes ? `<p><strong>Notes:</strong> ${violation.notes}</p>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+      
+      <div class="section">
+        <p style="text-align: center; color: #666; margin-top: 50px;">
+          This report was generated by the Food Safety Management System<br>
+          For questions about this report, contact your system administrator
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
+}
 
 // Helper functions for compliance analysis
 function analyzeTemperatureCompliance(records, type) {

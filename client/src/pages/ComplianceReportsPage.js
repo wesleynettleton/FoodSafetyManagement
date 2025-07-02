@@ -114,16 +114,22 @@ const ComplianceReportsPage = () => {
       );
       
       // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/html' }));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `compliance-report-${formData.startDate}-to-${formData.endDate}.pdf`);
+      link.setAttribute('download', `compliance-report-${formData.startDate}-to-${formData.endDate}.html`);
       document.body.appendChild(link);
       link.click();
       link.remove();
+      
+      // Show success message with print instructions
+      setError('');
+      setTimeout(() => {
+        alert('Report downloaded as HTML file. You can open it in your browser and use "Print to PDF" to create a PDF version.');
+      }, 500);
     } catch (err) {
-      setError('Failed to download PDF report. Please try again.');
-      console.error('PDF download error:', err);
+      setError('Failed to download report. Please try again.');
+      console.error('Report download error:', err);
     } finally {
       setLoading(false);
     }
@@ -280,7 +286,7 @@ const ComplianceReportsPage = () => {
                 disabled={loading}
                 startIcon={<DownloadIcon />}
               >
-                Download PDF
+                Download Report
               </Button>
             )}
           </Box>

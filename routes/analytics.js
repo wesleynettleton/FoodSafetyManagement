@@ -893,18 +893,41 @@ function analyzeProbeCompliance(records) {
   };
   
   records.forEach(record => {
+    // Determine expected temperature based on actual reading
+    // Ice water calibration: ~0°C (range -1 to 1)
+    // Boiling water calibration: ~100°C (range 99 to 101)
+    let expectedTemperature;
+    let calibrationType;
+    const actualTemp = record.temperature;
+    
+    if (actualTemp >= -2 && actualTemp <= 5) {
+      // Likely ice water calibration
+      expectedTemperature = 0;
+      calibrationType = 'ice';
+    } else if (actualTemp >= 95 && actualTemp <= 105) {
+      // Likely boiling water calibration
+      expectedTemperature = 100;
+      calibrationType = 'boiling';
+    } else {
+      // Unknown calibration type - skip compliance check
+      analysis.compliant++;
+      return;
+    }
+    
     // Probe calibration should be within ±1°C tolerance
     const tolerance = 1.0;
-    const isCompliant = Math.abs(record.actualTemperature - record.expectedTemperature) <= tolerance;
+    const deviation = Math.abs(actualTemp - expectedTemperature);
+    const isCompliant = deviation <= tolerance;
     
     if (isCompliant) {
       analysis.compliant++;
     } else {
-      const deviation = Math.abs(record.actualTemperature - record.expectedTemperature);
       analysis.violations.push({
         id: record._id,
-        actualTemperature: record.actualTemperature,
-        expectedTemperature: record.expectedTemperature,
+        probeId: record.probeId,
+        actualTemperature: actualTemp,
+        expectedTemperature: expectedTemperature,
+        calibrationType: calibrationType,
         deviation: deviation.toFixed(2),
         tolerance: `±${tolerance}°C`,
         location: record.location?.name || 'Unknown',

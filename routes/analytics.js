@@ -416,12 +416,12 @@ router.get('/compliance-report', auth, async (req, res) => {
     
     // Fetch all records within date range
     const [foodTemps, probeCalibrations, deliveries, tempRecords, coolingTemps, weeklyRecords] = await Promise.all([
-      FoodTemperature.find(dateFilter).populate('location', 'name').populate('recordedBy', 'username').sort({ createdAt: -1 }),
-      ProbeCalibration.find(dateFilter).populate('location', 'name').populate('recordedBy', 'username').sort({ createdAt: -1 }),
-      Delivery.find(dateFilter).populate('location', 'name').populate('recordedBy', 'username').sort({ createdAt: -1 }),
-      TemperatureRecord.find(dateFilter).populate('location', 'name').populate('recordedBy', 'username').sort({ createdAt: -1 }),
-      CoolingTemperature.find(dateFilter).populate('location', 'name').populate('recordedBy', 'username').sort({ createdAt: -1 }),
-      WeeklyRecord.find(dateFilter).populate('location', 'name').populate('recordedBy', 'username').sort({ createdAt: -1 })
+      FoodTemperature.find(dateFilter).populate('location', 'name').populate('createdBy', 'username').sort({ createdAt: -1 }),
+      ProbeCalibration.find(dateFilter).populate('location', 'name').populate('createdBy', 'username').sort({ createdAt: -1 }),
+      Delivery.find(dateFilter).populate('location', 'name').populate('createdBy', 'username').sort({ createdAt: -1 }),
+      TemperatureRecord.find(dateFilter).populate('location', 'name').populate('createdBy', 'username').sort({ createdAt: -1 }),
+      CoolingTemperature.find(dateFilter).populate('location', 'name').populate('createdBy', 'username').sort({ createdAt: -1 }),
+      WeeklyRecord.find(dateFilter).populate('location', 'name').populate('createdBy', 'username').sort({ createdAt: -1 })
     ]);
     
     // Analyze compliance for each record type
@@ -565,7 +565,7 @@ function analyzeTemperatureCompliance(records, type) {
         temperature: record.temperature,
         expectedRange,
         location: record.location?.name || 'Unknown',
-        recordedBy: record.recordedBy?.username || 'Unknown',
+        recordedBy: record.createdBy?.username || 'Unknown',
         recordedAt: record.createdAt,
         severity: getSeverityLevel(record.temperature, type),
         notes: record.notes || ''
@@ -597,7 +597,7 @@ function analyzeCoolingCompliance(records) {
         temperature: record.temperatureAfter2Hours,
         expectedRange: '≤8°C after 2 hours',
         location: record.location?.name || 'Unknown',
-        recordedBy: record.recordedBy?.username || 'Unknown',
+        recordedBy: record.createdBy?.username || 'Unknown',
         recordedAt: record.createdAt,
         severity: record.temperatureAfter2Hours > 15 ? 'critical' : 'major',
         notes: record.notes || ''
@@ -634,7 +634,7 @@ function analyzeProbeCompliance(records) {
         deviation: deviation.toFixed(2),
         tolerance: `±${tolerance}°C`,
         location: record.location?.name || 'Unknown',
-        recordedBy: record.recordedBy?.username || 'Unknown',
+        recordedBy: record.createdBy?.username || 'Unknown',
         recordedAt: record.createdAt,
         severity: deviation > 2 ? 'critical' : 'major',
         notes: record.notes || ''
@@ -674,7 +674,7 @@ function analyzeWeeklyCompliance(records) {
         failedItems,
         totalItems: Object.keys(checklist).length,
         location: record.location?.name || 'Unknown',
-        recordedBy: record.recordedBy?.username || 'Unknown',
+        recordedBy: record.createdBy?.username || 'Unknown',
         recordedAt: record.createdAt,
         severity: failedItems.length > 3 ? 'critical' : 'major',
         notes: record.notes || ''

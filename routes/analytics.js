@@ -181,9 +181,22 @@ router.get('/', auth, async (req, res) => {
         // BUT if temperature is ≤10°C, it's likely a cold storage temp and should be compliant
         return record.temperature >= 63 || record.temperature <= 10;
       }
-      if (record.type === 'equipment-temperature' || record.type === 'delivery') {
-        // Equipment and delivery temperatures should be cold (≤5°C) 
-        return record.temperature <= 5;
+      if (record.type === 'equipment-temperature') {
+        // Check equipment type for specific compliance
+        if (record.equipmentType === 'freezer') {
+          // Freezers must be ≤ -18°C
+          return record.temperature <= -18;
+        } else if (record.equipmentType === 'fridge') {
+          // Fridges should be 1-4°C (ideal) but we'll accept ≤ 8°C for compliance
+          return record.temperature <= 8;
+        } else {
+          // For unknown equipment types, use generic cold storage standard
+          return record.temperature <= 5;
+        }
+      }
+      if (record.type === 'delivery') {
+        // Delivery temperatures should be ≤8°C
+        return record.temperature <= 8;
       }
       if (record.type === 'cooling-temperature') {
         // For cooling records, check the final temperature after 2 hours should be ≤8°C
@@ -224,9 +237,18 @@ router.get('/', auth, async (req, res) => {
             // BUT if temperature is ≤10°C, it's likely a cold storage temp and should be compliant
             return record.temperature >= 63 || record.temperature <= 10;
           }
-          if (record.type === 'equipment-temperature' || record.type === 'delivery') {
-            // Equipment and delivery temperatures should be cold (≤5°C) 
-            return record.temperature <= 5;
+          if (record.type === 'equipment-temperature') {
+            // Check equipment type for specific compliance
+            if (record.equipmentType === 'freezer') {
+              // Freezers must be ≤ -18°C
+              return record.temperature <= -18;
+            } else if (record.equipmentType === 'fridge') {
+              // Fridges should be 1-4°C (ideal) but we'll accept ≤ 8°C for compliance
+              return record.temperature <= 8;
+            } else {
+              // For unknown equipment types, use generic cold storage standard
+              return record.temperature <= 5;
+            }
           }
           if (record.type === 'cooling-temperature') {
             return record.temperatureAfter2Hours <= 8;
@@ -311,7 +333,14 @@ router.get('/', auth, async (req, res) => {
         } else if (record.equipmentType === 'fridge' || record.equipmentType === 'freezer') {
           // This is equipment temp - use regular temperature field
           temp = record.temperature;
-          if (temp > 5) critical++;
+          // Check specific equipment type thresholds
+          if (record.equipmentType === 'freezer') {
+            if (temp > -18) critical++; // Freezer critical if above -18°C
+          } else if (record.equipmentType === 'fridge') {
+            if (temp > 8) critical++; // Fridge critical if above 8°C
+          } else {
+            if (temp > 5) critical++; // Generic equipment
+          }
         } else {
           // This might be hot food temp - use regular temperature field
           temp = record.temperature;
@@ -336,9 +365,19 @@ router.get('/', auth, async (req, res) => {
         // Skip temperatures that are clearly fridge/freezer temps (below 10°C)
         return record.temperature < 63 && record.temperature > 10;
       }
-      if (record.type === 'equipment-temperature' || record.type === 'delivery') {
-        // Alert if equipment/delivery temperature is above 5°C
-        return record.temperature > 5;
+      if (record.type === 'equipment-temperature') {
+        // Alert based on specific equipment type
+        if (record.equipmentType === 'freezer') {
+          return record.temperature > -18; // Freezer alert if above -18°C
+        } else if (record.equipmentType === 'fridge') {
+          return record.temperature > 8; // Fridge alert if above 8°C
+        } else {
+          return record.temperature > 5; // Generic equipment
+        }
+      }
+      if (record.type === 'delivery') {
+        // Alert if delivery temperature is above 8°C
+        return record.temperature > 8;
       }
       if (record.type === 'cooling-temperature') {
         return record.temperatureAfter2Hours > 8;
@@ -368,8 +407,18 @@ router.get('/', auth, async (req, res) => {
         message = `Hot food temperature in danger zone (${temp}°C) - should be ≥63°C`;
       } else if (record.type === 'cooling-temperature') {
         message = `Cooling temperature after 2 hours above 8°C (${temp}°C)`;
+      } else if (record.type === 'equipment-temperature') {
+        if (record.equipmentType === 'freezer') {
+          message = `Freezer temperature above standard (${temp}°C) - should be ≤-18°C`;
+        } else if (record.equipmentType === 'fridge') {
+          message = `Fridge temperature above acceptable range (${temp}°C) - should be ≤8°C`;
+        } else {
+          message = `Equipment temperature above 5°C (${temp}°C)`;
+        }
+      } else if (record.type === 'delivery') {
+        message = `Delivery temperature above 8°C (${temp}°C)`;
       } else {
-        message = `${typeNames[record.type] || 'Temperature'} above 5°C (${temp}°C)`;
+        message = `${typeNames[record.type] || 'Temperature'} above safe threshold (${temp}°C)`;
       }
       
       recentAlerts.push({
@@ -824,10 +873,22 @@ function analyzeTemperatureCompliance(records, type) {
         expectedRange = '≤10°C (cold) or ≥63°C (hot)';
         break;
       case 'equipment':
+        // Check specific equipment type
+        if (record.equipmentType === 'freezer') {
+          isCompliant = record.temperature <= -18;
+          expectedRange = '≤-18°C';
+        } else if (record.equipmentType === 'fridge') {
+          isCompliant = record.temperature <= 8;
+          expectedRange = '≤8°C';
+        } else {
+          isCompliant = record.temperature <= 5;
+          expectedRange = '≤5°C';
+        }
+        break;
       case 'delivery':
-        // Should be ≤5°C
-        isCompliant = record.temperature <= 5;
-        expectedRange = '≤5°C';
+        // Should be ≤8°C
+        isCompliant = record.temperature <= 8;
+        expectedRange = '≤8°C';
         break;
     }
     
@@ -841,7 +902,7 @@ function analyzeTemperatureCompliance(records, type) {
         location: record.location?.name || 'Unknown',
         recordedBy: record.createdBy?.username || 'Unknown',
         recordedAt: record.createdAt,
-        severity: getSeverityLevel(record.temperature, type),
+        severity: getSeverityLevel(record.temperature, type, record.equipmentType || null),
         notes: record.notes || ''
       });
     }
@@ -985,16 +1046,34 @@ function analyzeWeeklyCompliance(records) {
   return analysis;
 }
 
-function getSeverityLevel(temperature, type) {
+function getSeverityLevel(temperature, type, equipmentType = null) {
   switch (type) {
     case 'food':
       if (temperature > 10 && temperature < 40) return 'critical';
       if (temperature > 10 && temperature < 63) return 'major';
       return 'minor';
     case 'equipment':
+      if (equipmentType === 'freezer') {
+        // Freezer severity levels
+        if (temperature > -10) return 'critical'; // Very dangerous for frozen food
+        if (temperature > -15) return 'major';    // Significant risk
+        if (temperature > -18) return 'minor';    // Slightly above standard
+        return 'minor';
+      } else if (equipmentType === 'fridge') {
+        // Fridge severity levels
+        if (temperature > 10) return 'critical';  // Danger zone
+        if (temperature > 5) return 'major';      // Above warning level
+        if (temperature > 4) return 'minor';      // Above ideal range
+        return 'minor';
+      } else {
+        // Generic equipment
+        if (temperature > 10) return 'critical';
+        if (temperature > 5) return 'major';
+        return 'minor';
+      }
     case 'delivery':
       if (temperature > 10) return 'critical';
-      if (temperature > 5) return 'major';
+      if (temperature > 8) return 'major';
       return 'minor';
     default:
       return 'minor';

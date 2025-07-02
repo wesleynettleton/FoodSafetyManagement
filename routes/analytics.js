@@ -369,6 +369,418 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// Compliance Reports for Inspections/Audits
+router.get('/compliance-report', auth, async (req, res) => {
+  try {
+    const { startDate, endDate, location, reportType = 'full' } = req.query;
+    
+    // Validate date range
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: 'Start date and end date are required' });
+    }
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999); // Include the entire end date
+    
+    // Get user permissions
+    const User = require('../models/User');
+    const fullUser = await User.findById(req.user.id).populate('siteLocation');
+    
+    // Set up location filter based on user role
+    let locationFilter = {};
+    let allowedLocations = [];
+    
+    if (fullUser.role === 'admin') {
+      if (location && location !== 'all') {
+        locationFilter = { location: location };
+        const loc = await Location.findById(location);
+        allowedLocations = loc ? [loc] : [];
+      } else {
+        allowedLocations = await Location.find();
+      }
+    } else {
+      if (fullUser.siteLocation) {
+        locationFilter = { location: fullUser.siteLocation._id };
+        allowedLocations = [fullUser.siteLocation];
+      } else {
+        return res.status(403).json({ message: 'No location assigned to user' });
+      }
+    }
+    
+    // Add date filter
+    const dateFilter = {
+      ...locationFilter,
+      createdAt: { $gte: start, $lte: end }
+    };
+    
+    // Fetch all records within date range
+    const [foodTemps, probeCalibrations, deliveries, tempRecords, coolingTemps, weeklyRecords] = await Promise.all([
+      FoodTemperature.find(dateFilter).populate('location', 'name').populate('recordedBy', 'username').sort({ createdAt: -1 }),
+      ProbeCalibration.find(dateFilter).populate('location', 'name').populate('recordedBy', 'username').sort({ createdAt: -1 }),
+      Delivery.find(dateFilter).populate('location', 'name').populate('recordedBy', 'username').sort({ createdAt: -1 }),
+      TemperatureRecord.find(dateFilter).populate('location', 'name').populate('recordedBy', 'username').sort({ createdAt: -1 }),
+      CoolingTemperature.find(dateFilter).populate('location', 'name').populate('recordedBy', 'username').sort({ createdAt: -1 }),
+      WeeklyRecord.find(dateFilter).populate('location', 'name').populate('recordedBy', 'username').sort({ createdAt: -1 })
+    ]);
+    
+    // Analyze compliance for each record type
+    const complianceAnalysis = {
+      foodTemperature: analyzeTemperatureCompliance(foodTemps, 'food'),
+      equipmentTemperature: analyzeTemperatureCompliance(tempRecords, 'equipment'),
+      deliveryTemperature: analyzeTemperatureCompliance(deliveries, 'delivery'),
+      coolingTemperature: analyzeCoolingCompliance(coolingTemps),
+      probeCalibration: analyzeProbeCompliance(probeCalibrations),
+      weeklyChecklists: analyzeWeeklyCompliance(weeklyRecords)
+    };
+    
+    // Calculate overall compliance metrics
+    const totalRecords = foodTemps.length + tempRecords.length + deliveries.length + 
+                        coolingTemps.length + probeCalibrations.length + weeklyRecords.length;
+    
+    const totalCompliant = Object.values(complianceAnalysis).reduce((sum, analysis) => 
+      sum + analysis.compliant, 0);
+    
+    const overallComplianceRate = totalRecords > 0 ? 
+      ((totalCompliant / totalRecords) * 100).toFixed(2) : 100;
+    
+    // Generate violations summary
+    const violations = generateViolationsSummary(complianceAnalysis);
+    
+    // Create the compliance report
+    const complianceReport = {
+      reportMetadata: {
+        generatedAt: new Date().toISOString(),
+        reportPeriod: {
+          startDate: start.toISOString(),
+          endDate: end.toISOString(),
+          daysCovered: Math.ceil((end - start) / (1000 * 60 * 60 * 24))
+        },
+        locations: allowedLocations.map(loc => ({ id: loc._id, name: loc.name })),
+        reportType: reportType,
+        generatedBy: {
+          username: fullUser.username,
+          role: fullUser.role
+        }
+      },
+      
+      executiveSummary: {
+        totalRecords,
+        overallComplianceRate: parseFloat(overallComplianceRate),
+        totalViolations: violations.length,
+        criticalViolations: violations.filter(v => v.severity === 'critical').length,
+        recordTypes: {
+          foodTemperature: foodTemps.length,
+          equipmentTemperature: tempRecords.length,
+          deliveryTemperature: deliveries.length,
+          coolingTemperature: coolingTemps.length,
+          probeCalibration: probeCalibrations.length,
+          weeklyChecklists: weeklyRecords.length
+        }
+      },
+      
+      complianceAnalysis,
+      violations,
+      
+      // Detailed records (only included in full reports)
+      ...(reportType === 'full' && {
+        detailedRecords: {
+          foodTemperature: foodTemps,
+          equipmentTemperature: tempRecords,
+          deliveryTemperature: deliveries,
+          coolingTemperature: coolingTemps,
+          probeCalibration: probeCalibrations,
+          weeklyChecklists: weeklyRecords
+        }
+      }),
+      
+      // Corrective actions taken
+      correctiveActions: await generateCorrectiveActions(violations, start, end),
+      
+      // Recommendations
+      recommendations: generateRecommendations(complianceAnalysis, violations)
+    };
+    
+    res.json(complianceReport);
+    
+  } catch (error) {
+    console.error('Compliance report error:', error);
+    res.status(500).json({ message: 'Error generating compliance report', error: error.message });
+  }
+});
+
+// PDF Export endpoint
+router.get('/compliance-report/pdf', auth, async (req, res) => {
+  try {
+    // This would integrate with a PDF generation library
+    // For now, return the same data with PDF headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=compliance-report.pdf');
+    
+    // In a real implementation, you'd use libraries like:
+    // - puppeteer
+    // - jsPDF
+    // - PDFKit
+    // - html-pdf
+    
+    res.json({ message: 'PDF generation would be implemented here' });
+    
+  } catch (error) {
+    console.error('PDF export error:', error);
+    res.status(500).json({ message: 'Error generating PDF report' });
+  }
+});
+
+// Helper functions for compliance analysis
+function analyzeTemperatureCompliance(records, type) {
+  const analysis = {
+    total: records.length,
+    compliant: 0,
+    violations: []
+  };
+  
+  records.forEach(record => {
+    let isCompliant = false;
+    let expectedRange = '';
+    
+    switch (type) {
+      case 'food':
+        // Hot food ≥63°C or cold food ≤10°C
+        isCompliant = record.temperature >= 63 || record.temperature <= 10;
+        expectedRange = '≤10°C (cold) or ≥63°C (hot)';
+        break;
+      case 'equipment':
+      case 'delivery':
+        // Should be ≤5°C
+        isCompliant = record.temperature <= 5;
+        expectedRange = '≤5°C';
+        break;
+    }
+    
+    if (isCompliant) {
+      analysis.compliant++;
+    } else {
+      analysis.violations.push({
+        id: record._id,
+        temperature: record.temperature,
+        expectedRange,
+        location: record.location?.name || 'Unknown',
+        recordedBy: record.recordedBy?.username || 'Unknown',
+        recordedAt: record.createdAt,
+        severity: getSeverityLevel(record.temperature, type),
+        notes: record.notes || ''
+      });
+    }
+  });
+  
+  analysis.complianceRate = analysis.total > 0 ? 
+    ((analysis.compliant / analysis.total) * 100).toFixed(2) : 100;
+  
+  return analysis;
+}
+
+function analyzeCoolingCompliance(records) {
+  const analysis = {
+    total: records.length,
+    compliant: 0,
+    violations: []
+  };
+  
+  records.forEach(record => {
+    const isCompliant = record.temperatureAfter2Hours <= 8;
+    
+    if (isCompliant) {
+      analysis.compliant++;
+    } else {
+      analysis.violations.push({
+        id: record._id,
+        temperature: record.temperatureAfter2Hours,
+        expectedRange: '≤8°C after 2 hours',
+        location: record.location?.name || 'Unknown',
+        recordedBy: record.recordedBy?.username || 'Unknown',
+        recordedAt: record.createdAt,
+        severity: record.temperatureAfter2Hours > 15 ? 'critical' : 'major',
+        notes: record.notes || ''
+      });
+    }
+  });
+  
+  analysis.complianceRate = analysis.total > 0 ? 
+    ((analysis.compliant / analysis.total) * 100).toFixed(2) : 100;
+  
+  return analysis;
+}
+
+function analyzeProbeCompliance(records) {
+  const analysis = {
+    total: records.length,
+    compliant: 0,
+    violations: []
+  };
+  
+  records.forEach(record => {
+    // Probe calibration should be within ±1°C tolerance
+    const tolerance = 1.0;
+    const isCompliant = Math.abs(record.actualTemperature - record.expectedTemperature) <= tolerance;
+    
+    if (isCompliant) {
+      analysis.compliant++;
+    } else {
+      const deviation = Math.abs(record.actualTemperature - record.expectedTemperature);
+      analysis.violations.push({
+        id: record._id,
+        actualTemperature: record.actualTemperature,
+        expectedTemperature: record.expectedTemperature,
+        deviation: deviation.toFixed(2),
+        tolerance: `±${tolerance}°C`,
+        location: record.location?.name || 'Unknown',
+        recordedBy: record.recordedBy?.username || 'Unknown',
+        recordedAt: record.createdAt,
+        severity: deviation > 2 ? 'critical' : 'major',
+        notes: record.notes || ''
+      });
+    }
+  });
+  
+  analysis.complianceRate = analysis.total > 0 ? 
+    ((analysis.compliant / analysis.total) * 100).toFixed(2) : 100;
+  
+  return analysis;
+}
+
+function analyzeWeeklyCompliance(records) {
+  const analysis = {
+    total: records.length,
+    compliant: 0,
+    violations: []
+  };
+  
+  records.forEach(record => {
+    const checklist = record.checklistData || {};
+    const failedItems = [];
+    
+    // Check each checklist item
+    Object.entries(checklist).forEach(([key, value]) => {
+      if (typeof value === 'object' && value.value === 'No') {
+        failedItems.push(key);
+      }
+    });
+    
+    if (failedItems.length === 0) {
+      analysis.compliant++;
+    } else {
+      analysis.violations.push({
+        id: record._id,
+        failedItems,
+        totalItems: Object.keys(checklist).length,
+        location: record.location?.name || 'Unknown',
+        recordedBy: record.recordedBy?.username || 'Unknown',
+        recordedAt: record.createdAt,
+        severity: failedItems.length > 3 ? 'critical' : 'major',
+        notes: record.notes || ''
+      });
+    }
+  });
+  
+  analysis.complianceRate = analysis.total > 0 ? 
+    ((analysis.compliant / analysis.total) * 100).toFixed(2) : 100;
+  
+  return analysis;
+}
+
+function getSeverityLevel(temperature, type) {
+  switch (type) {
+    case 'food':
+      if (temperature > 10 && temperature < 40) return 'critical';
+      if (temperature > 10 && temperature < 63) return 'major';
+      return 'minor';
+    case 'equipment':
+    case 'delivery':
+      if (temperature > 10) return 'critical';
+      if (temperature > 5) return 'major';
+      return 'minor';
+    default:
+      return 'minor';
+  }
+}
+
+function generateViolationsSummary(complianceAnalysis) {
+  const violations = [];
+  
+  Object.entries(complianceAnalysis).forEach(([category, analysis]) => {
+    if (analysis.violations) {
+      analysis.violations.forEach(violation => {
+        violations.push({
+          ...violation,
+          category: category.replace(/([A-Z])/g, ' $1').toLowerCase().trim()
+        });
+      });
+    }
+  });
+  
+  // Sort by severity and date
+  violations.sort((a, b) => {
+    const severityOrder = { critical: 3, major: 2, minor: 1 };
+    if (severityOrder[a.severity] !== severityOrder[b.severity]) {
+      return severityOrder[b.severity] - severityOrder[a.severity];
+    }
+    return new Date(b.recordedAt) - new Date(a.recordedAt);
+  });
+  
+  return violations;
+}
+
+async function generateCorrectiveActions(violations, startDate, endDate) {
+  // In a real system, this would track actual corrective actions taken
+  // For now, generate suggested actions based on violations
+  const actions = [];
+  
+  const criticalViolations = violations.filter(v => v.severity === 'critical');
+  
+  if (criticalViolations.length > 0) {
+    actions.push({
+      type: 'immediate',
+      description: 'Critical temperature violations require immediate attention',
+      dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      assignedTo: 'Site Manager',
+      status: 'pending'
+    });
+  }
+  
+  return actions;
+}
+
+function generateRecommendations(complianceAnalysis, violations) {
+  const recommendations = [];
+  
+  // Temperature-based recommendations
+  const tempViolations = violations.filter(v => 
+    v.category.includes('temperature') && v.severity === 'critical'
+  );
+  
+  if (tempViolations.length > 5) {
+    recommendations.push({
+      priority: 'high',
+      category: 'equipment',
+      description: 'High number of temperature violations suggests equipment malfunction or training issues',
+      action: 'Review equipment maintenance schedules and provide additional staff training'
+    });
+  }
+  
+  // Weekly checklist recommendations
+  const checklistCompliance = parseFloat(complianceAnalysis.weeklyChecklists.complianceRate);
+  if (checklistCompliance < 90) {
+    recommendations.push({
+      priority: 'medium',
+      category: 'procedures',
+      description: 'Weekly checklist compliance below 90%',
+      action: 'Review checklist procedures with staff and ensure adequate time allocation'
+    });
+  }
+  
+  return recommendations;
+}
+
 // Helper function to get relative time
 function getRelativeTime(date) {
   const now = new Date();

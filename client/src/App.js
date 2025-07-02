@@ -39,6 +39,7 @@ import AdminWeeklyRecordsPage from './pages/AdminWeeklyRecordsPage';
 import AdminOpeningRecordsPage from './pages/AdminOpeningRecordsPage';
 import AdminClosingRecordsPage from './pages/AdminClosingRecordsPage';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
+import ComplianceReportsPage from './pages/ComplianceReportsPage';
 
 const theme = createTheme({
   palette: {
@@ -254,6 +255,15 @@ function App() {
               element={
                 <PrivateRoute>
                   <AnalyticsDashboard />
+                </PrivateRoute>
+              }
+            />
+            {/* Compliance Reports Route */}
+            <Route
+              path="/compliance-reports"
+              element={
+                <PrivateRoute>
+                  <ComplianceReportsPage />
                 </PrivateRoute>
               }
             />

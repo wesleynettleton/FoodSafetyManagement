@@ -16,7 +16,8 @@ import {
   Info as InfoIcon,
   Assignment as AssignmentIcon,
   ChecklistRtl as ChecklistIcon,
-  Analytics as AnalyticsIcon
+  Analytics as AnalyticsIcon,
+  Assessment as AssessmentIcon
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
@@ -62,6 +63,12 @@ const KitchenStaffDashboard = () => {
       description: 'See your location\'s compliance rates and trends.',
       icon: <AnalyticsIcon sx={{ fontSize: 40 }} />,
       path: '/admin/analytics'
+    },
+    {
+      title: 'Compliance Reports',
+      description: 'Generate compliance reports for your location.',
+      icon: <AssessmentIcon sx={{ fontSize: 40 }} />,
+      path: '/compliance-reports'
     },
     {
       title: 'Information',
@@ -134,7 +141,9 @@ const KitchenStaffDashboard = () => {
                         ? 'Start Recording'
                         : item.title === 'Checklists'
                           ? 'View Checklists'
-                          : 'Log Record'}
+                          : item.title === 'Compliance Reports'
+                            ? 'Generate Reports'
+                            : 'Log Record'}
                 </Button>
               </CardActions>
             </Card>

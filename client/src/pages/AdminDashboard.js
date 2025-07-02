@@ -20,6 +20,7 @@ import {
   Timer as TimerIcon,
   ChecklistRtl as ChecklistIcon,
   Analytics as AnalyticsIcon,
+  Assessment as AssessmentIcon,
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
@@ -42,6 +43,13 @@ const AdminDashboard = () => {
       icon: <AnalyticsIcon sx={{ fontSize: 40 }} />,
       path: '/admin/analytics',
       buttonText: 'View Analytics',
+    },
+    {
+      title: 'Compliance Reports',
+      description: 'Generate detailed compliance reports for inspections and audits.',
+      icon: <AssessmentIcon sx={{ fontSize: 40 }} />,
+      path: '/compliance-reports',
+      buttonText: 'Generate Reports',
     },
     {
       title: 'User Management',

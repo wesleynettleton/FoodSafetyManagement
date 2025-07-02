@@ -128,6 +128,29 @@ export const analyticsAPI = {
   getAnalytics: (location = 'all') => {
     const params = location !== 'all' ? `?location=${location}` : '';
     return api.get(`/analytics${params}`);
+  },
+  getComplianceReport: (startDate, endDate, location = 'all', reportType = 'full') => {
+    const params = new URLSearchParams({
+      startDate,
+      endDate,
+      reportType
+    });
+    if (location !== 'all') {
+      params.append('location', location);
+    }
+    return api.get(`/analytics/compliance-report?${params}`);
+  },
+  downloadComplianceReportPDF: (startDate, endDate, location = 'all') => {
+    const params = new URLSearchParams({
+      startDate,
+      endDate
+    });
+    if (location !== 'all') {
+      params.append('location', location);
+    }
+    return api.get(`/analytics/compliance-report/pdf?${params}`, {
+      responseType: 'blob'
+    });
   }
 };
 

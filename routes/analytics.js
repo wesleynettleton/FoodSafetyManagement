@@ -110,8 +110,8 @@ router.get('/', auth, async (req, res) => {
         return record.temperature <= 5;
       }
       if (record.type === 'cooling-temperature') {
-        // For cooling records, check the final temperature after 2 hours should be ≤5°C
-        return record.temperatureAfter2Hours <= 5;
+        // For cooling records, check the final temperature after 2 hours should be ≤8°C
+        return record.temperatureAfter2Hours <= 8;
       }
       if (record.type === 'weekly-record') {
         const checklist = record.checklistData;
@@ -153,7 +153,7 @@ router.get('/', auth, async (req, res) => {
             return record.temperature <= 5;
           }
           if (record.type === 'cooling-temperature') {
-            return record.temperatureAfter2Hours <= 5;
+            return record.temperatureAfter2Hours <= 8;
           }
           if (record.type === 'weekly-record') {
             const checklist = record.checklistData;
@@ -231,7 +231,7 @@ router.get('/', auth, async (req, res) => {
         if (record.temperatureAfter2Hours !== undefined) {
           // This is a cooling temperature - ONLY use the 2-hour temperature
           temp = record.temperatureAfter2Hours;
-          if (temp > 5) critical++;
+          if (temp > 8) critical++;
         } else if (record.equipmentType === 'fridge' || record.equipmentType === 'freezer') {
           // This is equipment temp - use regular temperature field
           temp = record.temperature;
@@ -265,7 +265,7 @@ router.get('/', auth, async (req, res) => {
         return record.temperature > 5;
       }
       if (record.type === 'cooling-temperature') {
-        return record.temperatureAfter2Hours > 5;
+        return record.temperatureAfter2Hours > 8;
       }
       return false;
     }).slice(0, 3);
@@ -291,7 +291,7 @@ router.get('/', auth, async (req, res) => {
       if (record.type === 'food-temperature') {
         message = `Hot food temperature in danger zone (${temp}°C) - should be ≥63°C`;
       } else if (record.type === 'cooling-temperature') {
-        message = `Cooling temperature after 2 hours above 5°C (${temp}°C)`;
+        message = `Cooling temperature after 2 hours above 8°C (${temp}°C)`;
       } else {
         message = `${typeNames[record.type] || 'Temperature'} above 5°C (${temp}°C)`;
       }

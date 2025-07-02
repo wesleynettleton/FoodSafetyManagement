@@ -718,8 +718,8 @@ router.get('/compliance-report/pdf', auth, async (req, res) => {
       violations
     });
     
-    // Set headers for file download
-    res.setHeader('Content-Type', 'text/html');
+    // Set headers for file download with proper UTF-8 encoding
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename=compliance-report-${startDate}-to-${endDate}.html`);
     
     res.send(html);
@@ -746,6 +746,8 @@ function generatePDFHTML(reportData) {
     <!DOCTYPE html>
     <html>
     <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Compliance Report</title>
       <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
@@ -834,8 +836,8 @@ function generatePDFHTML(reportData) {
               <p><strong>Severity:</strong> ${violation.severity.toUpperCase()}</p>
               <p><strong>Date:</strong> ${formatDate(violation.recordedAt)}</p>
               <p><strong>Recorded by:</strong> ${violation.recordedBy}</p>
-              ${violation.temperature ? `<p><strong>Temperature:</strong> ${violation.temperature}°C (Expected: ${violation.expectedRange})</p>` : ''}
-              ${violation.deviation ? `<p><strong>Calibration Deviation:</strong> ${violation.deviation}°C</p>` : ''}
+              ${violation.temperature ? `<p><strong>Temperature:</strong> ${violation.temperature}&deg;C (Expected: ${violation.expectedRange})</p>` : ''}
+              ${violation.deviation ? `<p><strong>Calibration Deviation:</strong> ${violation.deviation}&deg;C</p>` : ''}
               ${violation.failedItems ? `<p><strong>Failed Items:</strong> ${violation.failedItems.join(', ')}</p>` : ''}
               ${violation.notes ? `<p><strong>Notes:</strong> ${violation.notes}</p>` : ''}
             </div>
@@ -870,25 +872,25 @@ function analyzeTemperatureCompliance(records, type) {
       case 'food':
         // Hot food ≥63°C or cold food ≤10°C
         isCompliant = record.temperature >= 63 || record.temperature <= 10;
-        expectedRange = '≤10°C (cold) or ≥63°C (hot)';
+        expectedRange = '&le;10&deg;C (cold) or &ge;63&deg;C (hot)';
         break;
       case 'equipment':
         // Check specific equipment type
         if (record.equipmentType === 'freezer') {
           isCompliant = record.temperature <= -18;
-          expectedRange = '≤-18°C';
+          expectedRange = '&le;-18&deg;C';
         } else if (record.equipmentType === 'fridge') {
           isCompliant = record.temperature <= 8;
-          expectedRange = '≤8°C';
+          expectedRange = '&le;8&deg;C';
         } else {
           isCompliant = record.temperature <= 5;
-          expectedRange = '≤5°C';
+          expectedRange = '&le;5&deg;C';
         }
         break;
       case 'delivery':
         // Should be ≤8°C
         isCompliant = record.temperature <= 8;
-        expectedRange = '≤8°C';
+        expectedRange = '&le;8&deg;C';
         break;
     }
     
@@ -930,7 +932,7 @@ function analyzeCoolingCompliance(records) {
       analysis.violations.push({
         id: record._id,
         temperature: record.temperatureAfter2Hours,
-        expectedRange: '≤8°C after 2 hours',
+        expectedRange: '&le;8&deg;C after 2 hours',
         location: record.location?.name || 'Unknown',
         recordedBy: record.createdBy?.username || 'Unknown',
         recordedAt: record.createdAt,
@@ -990,7 +992,7 @@ function analyzeProbeCompliance(records) {
         expectedTemperature: expectedTemperature,
         calibrationType: calibrationType,
         deviation: deviation.toFixed(2),
-        tolerance: `±${tolerance}°C`,
+        tolerance: `&plusmn;${tolerance}&deg;C`,
         location: record.location?.name || 'Unknown',
         recordedBy: record.createdBy?.username || 'Unknown',
         recordedAt: record.createdAt,

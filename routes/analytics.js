@@ -215,9 +215,23 @@ router.get('/', auth, async (req, res) => {
         ? (temperatures.reduce((sum, temp) => sum + temp, 0) / temperatures.length).toFixed(1)
         : 0;
       
-      // For simplicity, mark temperatures in danger zone (5-63°C) as critical
-      // This assumes most temperatures are food temperatures
-      const critical = temperatures.filter(temp => temp > 5 && temp < 63).length;
+      // Calculate critical temperatures based on record type
+      let critical = 0;
+      dayRecords.forEach(record => {
+        const temp = record.temperature !== undefined ? record.temperature : record.temperatureAfter2Hours;
+        
+        // Determine if this temperature reading is critical based on its type
+        if (record.temperatureAfter2Hours !== undefined) {
+          // This is a cooling temperature - critical if > 5°C
+          if (temp > 5) critical++;
+        } else if (record.equipmentType === 'fridge' || record.equipmentType === 'freezer') {
+          // This is equipment temp - critical if > 5°C
+          if (temp > 5) critical++;
+        } else {
+          // This might be hot food temp - critical if in danger zone (10-63°C)
+          if (temp > 10 && temp < 63) critical++;
+        }
+      });
 
       temperatureTrends.push({
         date: dayStart.toISOString().split('T')[0],

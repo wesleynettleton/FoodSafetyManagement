@@ -152,7 +152,8 @@ export const analyticsAPI = {
       responseType: 'blob'
     });
   },
-  getProbeCalibrationStatus: () => api.get('/analytics/probe-calibration-status')
+  getProbeCalibrationStatus: () => api.get('/analytics/probe-calibration-status'),
+  getTemperatureReadingStatus: () => api.get('/analytics/temperature-reading-status')
 };
 
 export default api;

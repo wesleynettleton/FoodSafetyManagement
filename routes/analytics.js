@@ -51,6 +51,47 @@ router.get('/probe-calibration-status', auth, async (req, res) => {
   }
 });
 
+// Get daily temperature reading status (weekdays only)
+router.get('/temperature-reading-status', auth, async (req, res) => {
+  try {
+    const User = require('../models/User');
+    const fullUser = await User.findById(req.user.id).populate('siteLocation');
+    
+    // Set up location filter based on user role
+    let locations;
+    if (fullUser.role === 'admin') {
+      locations = await Location.find();
+    } else {
+      if (fullUser.siteLocation) {
+        locations = [fullUser.siteLocation];
+      } else {
+        return res.status(403).json({ message: 'No location assigned to user' });
+      }
+    }
+
+    const temperatureReadingStatus = await getTemperatureReadingStatus(locations);
+    
+    res.json({
+      locations: temperatureReadingStatus,
+      summary: {
+        totalLocations: temperatureReadingStatus.length,
+        missedToday: temperatureReadingStatus.filter(loc => 
+          !loc.fridgeReadingToday || !loc.freezerReadingToday
+        ).length,
+        missedYesterday: temperatureReadingStatus.filter(loc => 
+          !loc.fridgeReadingYesterday || !loc.freezerReadingYesterday
+        ).length,
+        compliantToday: temperatureReadingStatus.filter(loc => 
+          loc.fridgeReadingToday && loc.freezerReadingToday
+        ).length
+      }
+    });
+  } catch (error) {
+    console.error('Temperature reading status error:', error);
+    res.status(500).json({ message: 'Error fetching temperature reading status' });
+  }
+});
+
 // Get analytics data
 router.get('/', auth, async (req, res) => {
   try {
@@ -369,6 +410,10 @@ router.get('/', auth, async (req, res) => {
     // Check for probe calibrations that are due (monthly schedule)
     const probeCalibrationAlerts = await checkProbeCalibrationsDue(locations);
     recentAlerts.push(...probeCalibrationAlerts);
+
+    // Check for daily temperature readings (weekdays only)
+    const temperatureReadingAlerts = await checkDailyTemperatureReadings(locations);
+    recentAlerts.push(...temperatureReadingAlerts);
 
     const analytics = {
       overview: {
@@ -1194,6 +1239,253 @@ async function getProbeCalibrationStatus(locations) {
     console.error('Error getting probe calibration status:', error);
   }
 
+  return statusByLocation;
+}
+
+// Check for daily temperature readings (weekdays only)
+async function checkDailyTemperatureReadings(locations) {
+  const alerts = [];
+  
+  try {
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    
+    // Only check on weekdays (Monday to Friday)
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      return alerts; // No alerts on weekends
+    }
+    
+    // Get start of today
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    
+    // Get start of yesterday (for checking if yesterday's readings were missed)
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    
+    // Skip yesterday check if it was weekend
+    const yesterdayDayOfWeek = yesterdayStart.getDay();
+    const checkYesterday = yesterdayDayOfWeek !== 0 && yesterdayDayOfWeek !== 6;
+    
+    for (const location of locations) {
+      // Get all equipment for this location
+      const Equipment = require('../models/Equipment');
+      const equipment = await Equipment.find({ location: location._id });
+      
+      if (equipment.length === 0) {
+        continue; // Skip locations with no equipment
+      }
+      
+      // Check today's temperature readings
+      const todayReadings = await TemperatureRecord.find({
+        location: location._id,
+        createdAt: { $gte: todayStart }
+      }).populate('equipment', 'name type');
+      
+      // Group readings by equipment type
+      const todayFridgeReadings = todayReadings.filter(r => 
+        r.equipmentType === 'fridge' || (r.equipment && r.equipment.type === 'fridge')
+      );
+      const todayFreezerReadings = todayReadings.filter(r => 
+        r.equipmentType === 'freezer' || (r.equipment && r.equipment.type === 'freezer')
+      );
+      
+      // Count equipment by type
+      const fridges = equipment.filter(e => e.type === 'fridge');
+      const freezers = equipment.filter(e => e.type === 'freezer');
+      
+      // Check if daily readings are missing for today
+      if (fridges.length > 0 && todayFridgeReadings.length === 0) {
+        alerts.push({
+          id: `fridge-temp-today-${location._id}`,
+          type: 'Equipment',
+          message: 'Daily fridge temperature check required',
+          location: location.name,
+          severity: 'medium',
+          time: 'Due today',
+          metadata: {
+            equipmentType: 'fridge',
+            equipmentCount: fridges.length,
+            readingsToday: 0,
+            reminderType: 'daily_check'
+          }
+        });
+      }
+      
+      if (freezers.length > 0 && todayFreezerReadings.length === 0) {
+        alerts.push({
+          id: `freezer-temp-today-${location._id}`,
+          type: 'Equipment',
+          message: 'Daily freezer temperature check required',
+          location: location.name,
+          severity: 'medium',
+          time: 'Due today',
+          metadata: {
+            equipmentType: 'freezer',
+            equipmentCount: freezers.length,
+            readingsToday: 0,
+            reminderType: 'daily_check'
+          }
+        });
+      }
+      
+      // Check yesterday's readings if it was a weekday
+      if (checkYesterday) {
+        const yesterdayEnd = new Date(todayStart);
+        yesterdayEnd.setMilliseconds(-1); // End of yesterday
+        
+        const yesterdayReadings = await TemperatureRecord.find({
+          location: location._id,
+          createdAt: { $gte: yesterdayStart, $lte: yesterdayEnd }
+        }).populate('equipment', 'name type');
+        
+        const yesterdayFridgeReadings = yesterdayReadings.filter(r => 
+          r.equipmentType === 'fridge' || (r.equipment && r.equipment.type === 'fridge')
+        );
+        const yesterdayFreezerReadings = yesterdayReadings.filter(r => 
+          r.equipmentType === 'freezer' || (r.equipment && r.equipment.type === 'freezer')
+        );
+        
+        // Alert for missed yesterday readings
+        if (fridges.length > 0 && yesterdayFridgeReadings.length === 0) {
+          alerts.push({
+            id: `fridge-temp-missed-${location._id}`,
+            type: 'Equipment',
+            message: 'Missed fridge temperature check yesterday',
+            location: location.name,
+            severity: 'high',
+            time: 'Overdue',
+            metadata: {
+              equipmentType: 'fridge',
+              equipmentCount: fridges.length,
+              readingsYesterday: 0,
+              reminderType: 'missed_daily_check'
+            }
+          });
+        }
+        
+        if (freezers.length > 0 && yesterdayFreezerReadings.length === 0) {
+          alerts.push({
+            id: `freezer-temp-missed-${location._id}`,
+            type: 'Equipment',
+            message: 'Missed freezer temperature check yesterday',
+            location: location.name,
+            severity: 'high',
+            time: 'Overdue',
+            metadata: {
+              equipmentType: 'freezer',
+              equipmentCount: freezers.length,
+              readingsYesterday: 0,
+              reminderType: 'missed_daily_check'
+            }
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error checking daily temperature readings:', error);
+  }
+  
+  return alerts;
+}
+
+// Get detailed temperature reading status for locations
+async function getTemperatureReadingStatus(locations) {
+  const statusByLocation = [];
+  
+  try {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    
+    // Get start of today
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    
+    // Get start of yesterday
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    const yesterdayEnd = new Date(todayStart);
+    yesterdayEnd.setMilliseconds(-1);
+    
+    // Check if yesterday was a weekday
+    const yesterdayDayOfWeek = yesterdayStart.getDay();
+    const isYesterdayWeekday = yesterdayDayOfWeek !== 0 && yesterdayDayOfWeek !== 6;
+    
+    for (const location of locations) {
+      // Get all equipment for this location
+      const Equipment = require('../models/Equipment');
+      const equipment = await Equipment.find({ location: location._id });
+      
+      const fridges = equipment.filter(e => e.type === 'fridge');
+      const freezers = equipment.filter(e => e.type === 'freezer');
+      
+      // Get today's readings
+      const todayReadings = await TemperatureRecord.find({
+        location: location._id,
+        createdAt: { $gte: todayStart }
+      }).populate('equipment', 'name type');
+      
+      // Get yesterday's readings (if it was a weekday)
+      let yesterdayReadings = [];
+      if (isYesterdayWeekday) {
+        yesterdayReadings = await TemperatureRecord.find({
+          location: location._id,
+          createdAt: { $gte: yesterdayStart, $lte: yesterdayEnd }
+        }).populate('equipment', 'name type');
+      }
+      
+      // Analyze readings by equipment type
+      const todayFridgeReadings = todayReadings.filter(r => 
+        r.equipmentType === 'fridge' || (r.equipment && r.equipment.type === 'fridge')
+      );
+      const todayFreezerReadings = todayReadings.filter(r => 
+        r.equipmentType === 'freezer' || (r.equipment && r.equipment.type === 'freezer')
+      );
+      
+      const yesterdayFridgeReadings = yesterdayReadings.filter(r => 
+        r.equipmentType === 'fridge' || (r.equipment && r.equipment.type === 'fridge')
+      );
+      const yesterdayFreezerReadings = yesterdayReadings.filter(r => 
+        r.equipmentType === 'freezer' || (r.equipment && r.equipment.type === 'freezer')
+      );
+      
+      statusByLocation.push({
+        locationId: location._id,
+        locationName: location.name,
+        isWeekday: dayOfWeek !== 0 && dayOfWeek !== 6,
+        equipment: {
+          fridges: fridges.length,
+          freezers: freezers.length
+        },
+        readings: {
+          today: {
+            fridge: todayFridgeReadings.length,
+            freezer: todayFreezerReadings.length
+          },
+          yesterday: {
+            fridge: yesterdayFridgeReadings.length,
+            freezer: yesterdayFreezerReadings.length,
+            wasWeekday: isYesterdayWeekday
+          }
+        },
+        compliance: {
+          fridgeReadingToday: fridges.length === 0 || todayFridgeReadings.length > 0,
+          freezerReadingToday: freezers.length === 0 || todayFreezerReadings.length > 0,
+          fridgeReadingYesterday: !isYesterdayWeekday || fridges.length === 0 || yesterdayFridgeReadings.length > 0,
+          freezerReadingYesterday: !isYesterdayWeekday || freezers.length === 0 || yesterdayFreezerReadings.length > 0
+        },
+        lastReadings: {
+          fridge: todayFridgeReadings.length > 0 ? todayFridgeReadings[0].createdAt : 
+                 (yesterdayFridgeReadings.length > 0 ? yesterdayFridgeReadings[0].createdAt : null),
+          freezer: todayFreezerReadings.length > 0 ? todayFreezerReadings[0].createdAt : 
+                  (yesterdayFreezerReadings.length > 0 ? yesterdayFreezerReadings[0].createdAt : null)
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error getting temperature reading status:', error);
+  }
+  
   return statusByLocation;
 }
 

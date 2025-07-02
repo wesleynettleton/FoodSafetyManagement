@@ -203,12 +203,19 @@ router.get('/', auth, async (req, res) => {
 
       const temperatures = dayRecords
         .filter(record => {
-          // For cooling temperatures, use temperatureAfter2Hours, for others use temperature
-          return record.temperature !== undefined || record.temperatureAfter2Hours !== undefined;
+          // For cooling temperatures, only use temperatureAfter2Hours, for others use temperature
+          if (record.temperatureAfter2Hours !== undefined) {
+            // This is a cooling temperature - only use the 2-hour reading
+            return record.temperatureAfter2Hours !== undefined;
+          }
+          return record.temperature !== undefined;
         })
         .map(record => {
-          // Return the appropriate temperature field
-          return record.temperature !== undefined ? record.temperature : record.temperatureAfter2Hours;
+          // Return the appropriate temperature field - ONLY 2-hour temp for cooling
+          if (record.temperatureAfter2Hours !== undefined) {
+            return record.temperatureAfter2Hours;
+          }
+          return record.temperature;
         });
       
       const avgTemp = temperatures.length > 0 
@@ -218,17 +225,20 @@ router.get('/', auth, async (req, res) => {
       // Calculate critical temperatures based on record type
       let critical = 0;
       dayRecords.forEach(record => {
-        const temp = record.temperature !== undefined ? record.temperature : record.temperatureAfter2Hours;
+        let temp;
         
         // Determine if this temperature reading is critical based on its type
         if (record.temperatureAfter2Hours !== undefined) {
-          // This is a cooling temperature - critical if > 5°C
+          // This is a cooling temperature - ONLY use the 2-hour temperature
+          temp = record.temperatureAfter2Hours;
           if (temp > 5) critical++;
         } else if (record.equipmentType === 'fridge' || record.equipmentType === 'freezer') {
-          // This is equipment temp - critical if > 5°C
+          // This is equipment temp - use regular temperature field
+          temp = record.temperature;
           if (temp > 5) critical++;
         } else {
-          // This might be hot food temp - critical if in danger zone (10-63°C)
+          // This might be hot food temp - use regular temperature field
+          temp = record.temperature;
           if (temp > 10 && temp < 63) critical++;
         }
       });
@@ -261,7 +271,15 @@ router.get('/', auth, async (req, res) => {
     }).slice(0, 3);
 
     alertRecords.forEach((record, index) => {
-      const temp = record.temperature || record.temperatureAfter2Hours;
+      let temp;
+      
+      // Get the correct temperature field for each record type
+      if (record.type === 'cooling-temperature') {
+        temp = record.temperatureAfter2Hours; // ONLY use 2-hour temp for cooling
+      } else {
+        temp = record.temperature;
+      }
+      
       const typeNames = {
         'food-temperature': 'Food',
         'equipment-temperature': 'Equipment',
@@ -273,7 +291,7 @@ router.get('/', auth, async (req, res) => {
       if (record.type === 'food-temperature') {
         message = `Hot food temperature in danger zone (${temp}°C) - should be ≥63°C`;
       } else if (record.type === 'cooling-temperature') {
-        message = `Cooling temperature above 5°C (${temp}°C)`;
+        message = `Cooling temperature after 2 hours above 5°C (${temp}°C)`;
       } else {
         message = `${typeNames[record.type] || 'Temperature'} above 5°C (${temp}°C)`;
       }

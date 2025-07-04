@@ -78,16 +78,19 @@ export const recordsAPI = {
   // Food Temperature Records
   createFoodTemperature: (data) => api.post('/records/food-temperature', data),
   getFoodTemperatures: () => api.get('/records/food-temperature'),
+  updateFoodTemperature: (id, data) => api.put(`/records/food-temperature/${id}`, data),
   getByType: (type) => api.get(`/records/${type}`),
   getRecordsByTypeAndLocation: (type, locationId) => api.get(`/records/admin/${type}/${locationId}`),
 
   // Probe Calibration Records
   createProbeCalibration: (data) => api.post('/records/probe-calibration', data),
   getProbeCalibrations: () => api.get('/records/probe-calibration'),
+  updateProbeCalibration: (id, data) => api.put(`/records/probe-calibration/${id}`, data),
 
   // Delivery Records
   createDelivery: (data) => api.post('/records/delivery', data),
   getDeliveries: () => api.get('/records/delivery'),
+  updateDelivery: (id, data) => api.put(`/records/delivery/${id}`, data),
 
   // Temperature Records
   createTemperature: (data) => api.post('/records/temperature', {
@@ -97,11 +100,13 @@ export const recordsAPI = {
     note: data.note
   }),
   getTemperatures: () => api.get('/records/temperature?populate=equipment'),
+  updateTemperature: (id, data) => api.put(`/records/temperature/${id}`, data),
   deleteTemperatures: () => api.delete('/records/temperature/all'),
 
   // Cooling Temperature Records
   createCoolingTemperature: (data) => api.post('/records/cooling-temperature', data),
   getCoolingTemperatures: () => api.get('/records/cooling-temperature'),
+  updateCoolingTemperature: (id, data) => api.put(`/records/cooling-temperature/${id}`, data),
 
   // Weekly Records
   createWeeklyRecord: (data) => api.post('/records/weekly-record', data),

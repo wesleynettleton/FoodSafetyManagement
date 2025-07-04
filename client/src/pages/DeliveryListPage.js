@@ -117,15 +117,15 @@ const DeliveryListPage = () => {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          {user?.role !== 'admin' && (
-            <Button 
-              variant="contained" 
-              startIcon={<AddIcon />} 
-              onClick={() => navigate('/records/delivery/add')}
-            >
-              Add New Record
-            </Button>
-          )}
+        {user?.role !== 'admin' && (
+          <Button 
+            variant="contained" 
+            startIcon={<AddIcon />} 
+            onClick={() => navigate('/records/delivery/add')}
+          >
+            Add New Record
+          </Button>
+        )}
         </Box>
       </Box>
 

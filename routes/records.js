@@ -847,5 +847,250 @@ router.post('/weekly-record', [
     }
 });
 
+// @route   PUT api/records/food-temperature/:id
+// @desc    Update a food temperature record
+// @access  Private
+router.put('/food-temperature/:id', [
+    auth,
+    check('foodName', 'Food name is required').not().isEmpty(),
+    check('temperature', 'Temperature is required').isNumeric()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const user = await User.findById(req.user.id);
+        const record = await FoodTemperature.findById(req.params.id);
+
+        if (!record) {
+            return res.status(404).json({ msg: 'Record not found' });
+        }
+
+        // Check if user is authorized to edit (must be creator or admin)
+        if (user.role !== 'admin' && record.createdBy.toString() !== user.id) {
+            return res.status(401).json({ msg: 'Not authorized to edit this record' });
+        }
+
+        // Check if record belongs to user's location
+        if (record.location.toString() !== user.siteLocation.toString()) {
+            return res.status(401).json({ msg: 'Not authorized to edit this record' });
+        }
+
+        const updatedRecord = await FoodTemperature.findByIdAndUpdate(
+            req.params.id,
+            {
+                foodName: req.body.foodName,
+                temperature: req.body.temperature
+            },
+            { new: true }
+        );
+
+        res.json(updatedRecord);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   PUT api/records/probe-calibration/:id
+// @desc    Update a probe calibration record
+// @access  Private
+router.put('/probe-calibration/:id', [
+    auth,
+    check('probeId', 'Probe ID is required').not().isEmpty(),
+    check('temperature', 'Temperature is required').isNumeric(),
+    check('isCalibrated', 'Calibration status is required').isBoolean()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const user = await User.findById(req.user.id);
+        const record = await ProbeCalibration.findById(req.params.id);
+
+        if (!record) {
+            return res.status(404).json({ msg: 'Record not found' });
+        }
+
+        // Check if user is authorized to edit (must be creator or admin)
+        if (user.role !== 'admin' && record.createdBy.toString() !== user.id) {
+            return res.status(401).json({ msg: 'Not authorized to edit this record' });
+        }
+
+        // Check if record belongs to user's location
+        if (record.location.toString() !== user.siteLocation.toString()) {
+            return res.status(401).json({ msg: 'Not authorized to edit this record' });
+        }
+
+        const updatedRecord = await ProbeCalibration.findByIdAndUpdate(
+            req.params.id,
+            {
+                probeId: req.body.probeId,
+                temperature: req.body.temperature,
+                isCalibrated: req.body.isCalibrated
+            },
+            { new: true }
+        );
+
+        res.json(updatedRecord);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   PUT api/records/delivery/:id
+// @desc    Update a delivery record
+// @access  Private
+router.put('/delivery/:id', [
+    auth,
+    check('supplier', 'Supplier is required').not().isEmpty(),
+    check('temperature', 'Temperature is required').isNumeric()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const user = await User.findById(req.user.id);
+        const record = await Delivery.findById(req.params.id);
+
+        if (!record) {
+            return res.status(404).json({ msg: 'Record not found' });
+        }
+
+        // Check if user is authorized to edit (must be creator or admin)
+        if (user.role !== 'admin' && record.createdBy.toString() !== user.id) {
+            return res.status(401).json({ msg: 'Not authorized to edit this record' });
+        }
+
+        // Check if record belongs to user's location
+        if (record.location.toString() !== user.siteLocation.toString()) {
+            return res.status(401).json({ msg: 'Not authorized to edit this record' });
+        }
+
+        const updatedRecord = await Delivery.findByIdAndUpdate(
+            req.params.id,
+            {
+                supplier: req.body.supplier,
+                temperature: req.body.temperature,
+                notes: req.body.notes
+            },
+            { new: true }
+        );
+
+        res.json(updatedRecord);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   PUT api/records/temperature/:id
+// @desc    Update a fridge/freezer temperature record
+// @access  Private
+router.put('/temperature/:id', [
+    auth,
+    check('temperature', 'Temperature is required').isNumeric(),
+    check('note', 'Note must be a string').optional().isString().trim()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const user = await User.findById(req.user.id);
+        const record = await TemperatureRecord.findById(req.params.id);
+
+        if (!record) {
+            return res.status(404).json({ msg: 'Record not found' });
+        }
+
+        // Check if user is authorized to edit (must be creator or admin)
+        if (user.role !== 'admin' && record.createdBy.toString() !== user.id) {
+            return res.status(401).json({ msg: 'Not authorized to edit this record' });
+        }
+
+        // Check if record belongs to user's location
+        if (record.location.toString() !== user.siteLocation.toString()) {
+            return res.status(401).json({ msg: 'Not authorized to edit this record' });
+        }
+
+        const updatedRecord = await TemperatureRecord.findByIdAndUpdate(
+            req.params.id,
+            {
+                temperature: req.body.temperature,
+                note: req.body.note
+            },
+            { new: true }
+        ).populate('equipment', 'name type');
+
+        res.json(updatedRecord);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   PUT api/records/cooling-temperature/:id
+// @desc    Update a cooling temperature record
+// @access  Private
+router.put('/cooling-temperature/:id', [
+    auth,
+    check('foodName', 'Food name is required').not().isEmpty(),
+    check('coolingStartTime', 'Cooling start time is required').isISO8601(),
+    check('movedToStorageTime', 'Time moved to storage is required').isISO8601(),
+    check('temperatureAfter90Min', 'Temperature after 90 minutes is required').isNumeric(),
+    check('temperatureAfter2Hours', 'Temperature after 2 hours is required').isNumeric()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const user = await User.findById(req.user.id);
+        const record = await CoolingTemperature.findById(req.params.id);
+
+        if (!record) {
+            return res.status(404).json({ msg: 'Record not found' });
+        }
+
+        // Check if user is authorized to edit (must be creator or admin)
+        if (user.role !== 'admin' && record.createdBy.toString() !== user.id) {
+            return res.status(401).json({ msg: 'Not authorized to edit this record' });
+        }
+
+        // Check if record belongs to user's location
+        if (record.location.toString() !== user.siteLocation.toString()) {
+            return res.status(401).json({ msg: 'Not authorized to edit this record' });
+        }
+
+        const updatedRecord = await CoolingTemperature.findByIdAndUpdate(
+            req.params.id,
+            {
+                foodName: req.body.foodName,
+                coolingStartTime: new Date(req.body.coolingStartTime),
+                movedToStorageTime: new Date(req.body.movedToStorageTime),
+                temperatureAfter90Min: req.body.temperatureAfter90Min,
+                temperatureAfter2Hours: req.body.temperatureAfter2Hours,
+                correctiveActions: req.body.correctiveActions
+            },
+            { new: true }
+        );
+
+        res.json(updatedRecord);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 module.exports = router;
    

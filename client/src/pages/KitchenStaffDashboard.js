@@ -143,7 +143,7 @@ const KitchenStaffDashboard = () => {
                           ? 'View Checklists'
                           : item.title === 'Compliance Reports'
                             ? 'Generate Reports'
-                            : 'Log Record'}
+                      : 'Log Record'}
                 </Button>
               </CardActions>
             </Card>

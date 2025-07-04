@@ -138,9 +138,9 @@ const EquipmentManagementPage = () => {
           <IconButton onClick={() => navigate('/dashboard')} sx={{ mr: 1 }}>
             <ArrowBackIcon />
           </IconButton>
-          <Typography variant="h4" component="h1">
-            Equipment Management
-          </Typography>
+        <Typography variant="h4" component="h1">
+          Equipment Management
+        </Typography>
         </Box>
         <Button
           variant="contained"

@@ -26,7 +26,8 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem
+  MenuItem,
+  TextField
 } from '@mui/material';
 import {
   Thermostat as ThermostatIcon,
@@ -38,7 +39,8 @@ import {
   Warning as WarningIcon,
   Restaurant as RestaurantIcon,
   Delete as DeleteIcon,
-  Timer as TimerIcon
+  Timer as TimerIcon,
+  Edit as EditIcon
 } from '@mui/icons-material';
 import { recordsAPI } from '../services/api';
 import { useSelector } from 'react-redux';
@@ -267,30 +269,35 @@ const MyRecordsListPage = () => {
   const [recordToDelete, setRecordToDelete] = useState(null);
   const [deleteError, setDeleteError] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editedRecord, setEditedRecord] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
+  const [editError, setEditError] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
 
   const fetchRecords = useCallback(async () => {
-    setLoading(true);
+      setLoading(true);
     setError('');
 
     if (!user || !user._id) {
       console.warn('MyRecordsListPage: User data (_id) not available, cannot fetch records.');
-      setAllRecords([]);
+        setAllRecords([]);
       setError('User data not available to fetch records.');
-      setLoading(false);
-      return;
-    }
+        setLoading(false);
+        return;
+      }
 
-    try {
-      const response = await recordsAPI.getAll();
-      setAllRecords(response.data);
-      setError('');
-    } catch (err) {
-      setError('Failed to fetch records. Please try again.');
-      console.error(err);
-      setAllRecords([]);
-    } finally {
-      setLoading(false);
-    }
+      try {
+        const response = await recordsAPI.getAll();
+        setAllRecords(response.data);
+        setError('');
+      } catch (err) {
+        setError('Failed to fetch records. Please try again.');
+        console.error(err);
+        setAllRecords([]);
+      } finally {
+        setLoading(false);
+      }
   }, [user]);
 
   useEffect(() => {
@@ -352,6 +359,115 @@ const MyRecordsListPage = () => {
     setDeleteError('');
   };
 
+  const handleEditClick = (record) => {
+    if (isEditing) return; // Prevent multiple clicks
+    setEditedRecord(record);
+    
+    // Initialize form data based on record type
+    let initialFormData = {};
+    switch (record.type) {
+      case 'food_temperature':
+        initialFormData = {
+          foodName: record.foodName || '',
+          temperature: record.temperature || ''
+        };
+        break;
+      case 'probe_calibration':
+        initialFormData = {
+          probeId: record.probeId || '',
+          temperature: record.temperature || '',
+          isCalibrated: record.isCalibrated || false
+        };
+        break;
+      case 'delivery':
+        initialFormData = {
+          supplier: record.supplier || '',
+          temperature: record.temperature || '',
+          notes: record.notes || ''
+        };
+        break;
+      case 'fridge_temperature':
+      case 'freezer_temperature':
+        initialFormData = {
+          temperature: record.temperature || '',
+          note: record.note || ''
+        };
+        break;
+      case 'cooling_temperature':
+        initialFormData = {
+          foodName: record.foodName || '',
+          coolingStartTime: record.coolingStartTime ? new Date(record.coolingStartTime).toISOString().slice(0, 16) : '',
+          movedToStorageTime: record.movedToStorageTime ? new Date(record.movedToStorageTime).toISOString().slice(0, 16) : '',
+          temperatureAfter90Min: record.temperatureAfter90Min || '',
+          temperatureAfter2Hours: record.temperatureAfter2Hours || '',
+          correctiveActions: record.correctiveActions || ''
+        };
+        break;
+      default:
+        initialFormData = {};
+    }
+    
+    setEditFormData(initialFormData);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditFormChange = (field, value) => {
+    setEditFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleEditConfirm = async () => {
+    if (!editedRecord || isEditing) return;
+
+    try {
+      setIsEditing(true);
+      let updatedRecord;
+      
+      switch (editedRecord.type) {
+        case 'food_temperature':
+          updatedRecord = await recordsAPI.updateFoodTemperature(editedRecord._id, editFormData);
+          break;
+        case 'probe_calibration':
+          updatedRecord = await recordsAPI.updateProbeCalibration(editedRecord._id, editFormData);
+          break;
+        case 'delivery':
+          updatedRecord = await recordsAPI.updateDelivery(editedRecord._id, editFormData);
+          break;
+        case 'fridge_temperature':
+        case 'freezer_temperature':
+          updatedRecord = await recordsAPI.updateTemperature(editedRecord._id, editFormData);
+          break;
+        case 'cooling_temperature':
+          updatedRecord = await recordsAPI.updateCoolingTemperature(editedRecord._id, editFormData);
+          break;
+        default:
+          throw new Error('Unsupported record type');
+      }
+      
+      // Update the edited record in both allRecords and displayedRecords
+      const updatedRecordData = updatedRecord.data || updatedRecord;
+      setAllRecords(prev => prev.map(r => r._id === editedRecord._id ? updatedRecordData : r));
+      setDisplayedRecords(prev => prev.map(r => r._id === editedRecord._id ? updatedRecordData : r));
+      setEditError('');
+    } catch (err) {
+      setEditError(err.response?.data?.msg || err.response?.data?.errors?.map(er => er.msg).join(', ') || 'Failed to update record');
+    } finally {
+      setIsEditing(false);
+      setEditDialogOpen(false);
+      setEditedRecord(null);
+      setEditFormData({});
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditDialogOpen(false);
+    setEditedRecord(null);
+    setEditFormData({});
+    setEditError('');
+  };
+
   const getTableHeaders = (activeFilter) => {
     const baseHeaders = ['Type', 'Date'];
     const headers = [...baseHeaders];
@@ -396,6 +512,22 @@ const MyRecordsListPage = () => {
                 }}
               >
                 <DeleteIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title="Edit Record">
+            <span> {/* Wrap in span to maintain tooltip when button is disabled */}
+              <IconButton
+                onClick={() => handleEditClick(record)}
+                size="small"
+                color="primary"
+                disabled={isEditing}
+                sx={{ 
+                  '&:hover': { backgroundColor: 'primary.lighter' },
+                  '&.Mui-disabled': { opacity: 0.5 }
+                }}
+              >
+                <EditIcon />
               </IconButton>
             </span>
           </Tooltip>
@@ -810,6 +942,237 @@ const MyRecordsListPage = () => {
             autoFocus
           >
             {isDeleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Record Dialog */}
+      <Dialog
+        open={editDialogOpen}
+        onClose={handleEditCancel}
+        aria-labelledby="edit-dialog-title"
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle id="edit-dialog-title">
+          Edit {editedRecord?.type ? getRecordTypeDetails(editedRecord).typeDisplay : 'Record'}
+        </DialogTitle>
+        <DialogContent>
+          {editError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {editError}
+            </Alert>
+          )}
+          
+          {editedRecord && (
+            <Box sx={{ mt: 1 }}>
+              {editedRecord.type === 'food_temperature' && (
+                <Box>
+                  <TextField
+                    autoFocus
+                    required
+                    fullWidth
+                    label="Food Name"
+                    value={editFormData.foodName || ''}
+                    onChange={(e) => handleEditFormChange('foodName', e.target.value)}
+                    sx={{ mb: 2 }}
+                    disabled={isEditing}
+                  />
+                  <TextField
+                    required
+                    fullWidth
+                    label="Temperature (°C)"
+                    type="number"
+                    value={editFormData.temperature || ''}
+                    onChange={(e) => handleEditFormChange('temperature', e.target.value)}
+                    sx={{ mb: 2 }}
+                    disabled={isEditing}
+                  />
+                </Box>
+              )}
+
+              {editedRecord.type === 'probe_calibration' && (
+                <Box>
+                  <TextField
+                    autoFocus
+                    required
+                    fullWidth
+                    label="Probe ID"
+                    value={editFormData.probeId || ''}
+                    onChange={(e) => handleEditFormChange('probeId', e.target.value)}
+                    sx={{ mb: 2 }}
+                    disabled={isEditing}
+                  />
+                  <TextField
+                    required
+                    fullWidth
+                    label="Temperature (°C)"
+                    type="number"
+                    value={editFormData.temperature || ''}
+                    onChange={(e) => handleEditFormChange('temperature', e.target.value)}
+                    sx={{ mb: 2 }}
+                    disabled={isEditing}
+                  />
+                  <FormControl fullWidth sx={{ mb: 2 }}>
+                    <InputLabel>Calibration Status</InputLabel>
+                    <Select
+                      value={editFormData.isCalibrated || false}
+                      onChange={(e) => handleEditFormChange('isCalibrated', e.target.value)}
+                      label="Calibration Status"
+                      disabled={isEditing}
+                    >
+                      <MenuItem value={true}>Calibrated</MenuItem>
+                      <MenuItem value={false}>Not Calibrated</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+              )}
+
+              {editedRecord.type === 'delivery' && (
+                <Box>
+                  <TextField
+                    autoFocus
+                    required
+                    fullWidth
+                    label="Supplier"
+                    value={editFormData.supplier || ''}
+                    onChange={(e) => handleEditFormChange('supplier', e.target.value)}
+                    sx={{ mb: 2 }}
+                    disabled={isEditing}
+                  />
+                  <TextField
+                    required
+                    fullWidth
+                    label="Temperature (°C)"
+                    type="number"
+                    value={editFormData.temperature || ''}
+                    onChange={(e) => handleEditFormChange('temperature', e.target.value)}
+                    sx={{ mb: 2 }}
+                    disabled={isEditing}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Notes"
+                    multiline
+                    rows={3}
+                    value={editFormData.notes || ''}
+                    onChange={(e) => handleEditFormChange('notes', e.target.value)}
+                    sx={{ mb: 2 }}
+                    disabled={isEditing}
+                  />
+                </Box>
+              )}
+
+              {(editedRecord.type === 'fridge_temperature' || editedRecord.type === 'freezer_temperature') && (
+                <Box>
+                  <TextField
+                    autoFocus
+                    required
+                    fullWidth
+                    label="Temperature (°C)"
+                    type="number"
+                    value={editFormData.temperature || ''}
+                    onChange={(e) => handleEditFormChange('temperature', e.target.value)}
+                    sx={{ mb: 2 }}
+                    disabled={isEditing}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Note"
+                    multiline
+                    rows={3}
+                    value={editFormData.note || ''}
+                    onChange={(e) => handleEditFormChange('note', e.target.value)}
+                    sx={{ mb: 2 }}
+                    disabled={isEditing}
+                  />
+                </Box>
+              )}
+
+              {editedRecord.type === 'cooling_temperature' && (
+                <Box>
+                  <TextField
+                    autoFocus
+                    required
+                    fullWidth
+                    label="Food Name"
+                    value={editFormData.foodName || ''}
+                    onChange={(e) => handleEditFormChange('foodName', e.target.value)}
+                    sx={{ mb: 2 }}
+                    disabled={isEditing}
+                  />
+                  <TextField
+                    required
+                    fullWidth
+                    label="Cooling Start Time"
+                    type="datetime-local"
+                    value={editFormData.coolingStartTime || ''}
+                    onChange={(e) => handleEditFormChange('coolingStartTime', e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ mb: 2 }}
+                    disabled={isEditing}
+                  />
+                  <TextField
+                    required
+                    fullWidth
+                    label="Moved to Storage Time"
+                    type="datetime-local"
+                    value={editFormData.movedToStorageTime || ''}
+                    onChange={(e) => handleEditFormChange('movedToStorageTime', e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ mb: 2 }}
+                    disabled={isEditing}
+                  />
+                  <TextField
+                    required
+                    fullWidth
+                    label="Temperature After 90 Min (°C)"
+                    type="number"
+                    value={editFormData.temperatureAfter90Min || ''}
+                    onChange={(e) => handleEditFormChange('temperatureAfter90Min', e.target.value)}
+                    sx={{ mb: 2 }}
+                    disabled={isEditing}
+                  />
+                  <TextField
+                    required
+                    fullWidth
+                    label="Temperature After 2 Hours (°C)"
+                    type="number"
+                    value={editFormData.temperatureAfter2Hours || ''}
+                    onChange={(e) => handleEditFormChange('temperatureAfter2Hours', e.target.value)}
+                    sx={{ mb: 2 }}
+                    disabled={isEditing}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Corrective Actions"
+                    multiline
+                    rows={3}
+                    value={editFormData.correctiveActions || ''}
+                    onChange={(e) => handleEditFormChange('correctiveActions', e.target.value)}
+                    sx={{ mb: 2 }}
+                    disabled={isEditing}
+                  />
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={handleEditCancel} 
+            color="primary"
+            disabled={isEditing}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleEditConfirm} 
+            color="primary" 
+            disabled={isEditing}
+            autoFocus
+          >
+            {isEditing ? 'Updating...' : 'Update'}
           </Button>
         </DialogActions>
       </Dialog>

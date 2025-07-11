@@ -41,7 +41,6 @@ import {
   Search as SearchIcon,
   FilterList as FilterListIcon
 } from '@mui/icons-material';
-import Layout from '../components/Layout';
 
 const ViewAuditsPage = () => {
   const navigate = useNavigate();
@@ -160,306 +159,304 @@ const ViewAuditsPage = () => {
   };
 
   return (
-    <Layout>
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <IconButton onClick={() => navigate('/admin/audits')} sx={{ mr: 2 }}>
-              <ArrowBackIcon />
-            </IconButton>
-            <Typography variant="h4" component="h1">
-              View Audits
-            </Typography>
-          </Box>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => navigate('/admin/audits/take')}
-            size="large"
-          >
-            New Audit
-          </Button>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      {/* Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <IconButton onClick={() => navigate('/admin/audits')} sx={{ mr: 2 }}>
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography variant="h4" component="h1">
+            View Audits
+          </Typography>
         </Box>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => navigate('/admin/audits/take')}
+          size="large"
+        >
+          New Audit
+        </Button>
+      </Box>
 
-        {/* Statistics Cards */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} md={3}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" color="primary">
-                  {audits.filter(a => a.status === 'completed').length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Completed Audits
-                </Typography>
-              </CardContent>
-            </Card>
+      {/* Statistics Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} md={3}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" color="primary">
+                {audits.filter(a => a.status === 'completed').length}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Completed Audits
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={3}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" color="warning.main">
+                {audits.filter(a => a.status === 'in-progress').length}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                In Progress
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={3}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" color="info.main">
+                {audits.filter(a => a.status === 'scheduled').length}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Scheduled
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={3}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" color="success.main">
+                {audits.filter(a => a.score >= 90).length}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                High Scores (90%+)
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Filters */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Grid container spacing={3} alignItems="center">
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              placeholder="Search by location or auditor..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
+              }}
+            />
           </Grid>
           <Grid item xs={12} md={3}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" color="warning.main">
-                  {audits.filter(a => a.status === 'in-progress').length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  In Progress
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" color="info.main">
-                  {audits.filter(a => a.status === 'scheduled').length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Scheduled
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" color="success.main">
-                  {audits.filter(a => a.score >= 90).length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  High Scores (90%+)
-                </Typography>
-              </CardContent>
-            </Card>
+            <FormControl fullWidth>
+              <InputLabel>Status Filter</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Status Filter"
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <MenuItem value="all">All Statuses</MenuItem>
+                <MenuItem value="completed">Completed</MenuItem>
+                <MenuItem value="in-progress">In Progress</MenuItem>
+                <MenuItem value="scheduled">Scheduled</MenuItem>
+              </Select>
+            </FormControl>
           </Grid>
         </Grid>
+      </Paper>
 
-        {/* Filters */}
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                placeholder="Search by location or auditor..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Status Filter</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label="Status Filter"
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <MenuItem value="all">All Statuses</MenuItem>
-                  <MenuItem value="completed">Completed</MenuItem>
-                  <MenuItem value="in-progress">In Progress</MenuItem>
-                  <MenuItem value="scheduled">Scheduled</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        </Paper>
-
-        {/* Audits Table */}
-        <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-          <TableContainer>
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Location</TableCell>
-                  <TableCell>Auditor</TableCell>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Progress</TableCell>
-                  <TableCell>Score</TableCell>
-                  <TableCell align="center">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredAudits.map((audit) => (
-                  <TableRow key={audit.id} hover>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight="medium">
-                        {audit.location}
+      {/* Audits Table */}
+      <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+        <TableContainer>
+          <Table stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell>Location</TableCell>
+                <TableCell>Auditor</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Progress</TableCell>
+                <TableCell>Score</TableCell>
+                <TableCell align="center">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredAudits.map((audit) => (
+                <TableRow key={audit.id} hover>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight="medium">
+                      {audit.location}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>{audit.auditor}</TableCell>
+                  <TableCell>
+                    {new Date(audit.auditDate).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={audit.status.charAt(0).toUpperCase() + audit.status.slice(1)}
+                      color={getStatusColor(audit.status)}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {Math.round(calculateProgress(audit))}%
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    {audit.score ? (
+                      <Typography
+                        variant="body2"
+                        color={getScoreColor(audit.score)}
+                        fontWeight="bold"
+                      >
+                        {audit.score}%
                       </Typography>
-                    </TableCell>
-                    <TableCell>{audit.auditor}</TableCell>
-                    <TableCell>
-                      {new Date(audit.auditDate).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={audit.status.charAt(0).toUpperCase() + audit.status.slice(1)}
-                        color={getStatusColor(audit.status)}
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        N/A
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell align="center">
+                    <Tooltip title="View Details">
+                      <IconButton
                         size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {Math.round(calculateProgress(audit))}%
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      {audit.score ? (
-                        <Typography
-                          variant="body2"
-                          color={getScoreColor(audit.score)}
-                          fontWeight="bold"
-                        >
-                          {audit.score}%
-                        </Typography>
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          N/A
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell align="center">
-                      <Tooltip title="View Details">
+                        onClick={() => handleViewAudit(audit)}
+                      >
+                        <VisibilityIcon />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Edit Audit">
+                      <IconButton
+                        size="small"
+                        onClick={() => navigate(`/admin/audits/edit/${audit.id}`)}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                    </Tooltip>
+                    {audit.status === 'completed' && (
+                      <Tooltip title="Download Report">
                         <IconButton
                           size="small"
-                          onClick={() => handleViewAudit(audit)}
+                          onClick={() => console.log('Download report', audit.id)}
                         >
-                          <VisibilityIcon />
+                          <DownloadIcon />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Edit Audit">
-                        <IconButton
-                          size="small"
-                          onClick={() => navigate(`/admin/audits/edit/${audit.id}`)}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-                      {audit.status === 'completed' && (
-                        <Tooltip title="Download Report">
-                          <IconButton
-                            size="small"
-                            onClick={() => console.log('Download report', audit.id)}
-                          >
-                            <DownloadIcon />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
 
-        {/* Audit Details Dialog */}
-        <Dialog
-          open={viewDialogOpen}
-          onClose={handleCloseDialog}
-          maxWidth="md"
-          fullWidth
-        >
-          <DialogTitle>
-            Audit Details - {selectedAudit?.location}
-          </DialogTitle>
-          <DialogContent>
-            {selectedAudit && (
-              <Box>
-                <Grid container spacing={2} sx={{ mb: 3 }}>
-                  <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">
-                      Auditor: {selectedAudit.auditor}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">
-                      Date: {new Date(selectedAudit.auditDate).toLocaleDateString()}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">
-                      Status: {selectedAudit.status}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">
-                      Score: {selectedAudit.score ? `${selectedAudit.score}%` : 'N/A'}
-                    </Typography>
-                  </Grid>
+      {/* Audit Details Dialog */}
+      <Dialog
+        open={viewDialogOpen}
+        onClose={handleCloseDialog}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Audit Details - {selectedAudit?.location}
+        </DialogTitle>
+        <DialogContent>
+          {selectedAudit && (
+            <Box>
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Auditor: {selectedAudit.auditor}
+                  </Typography>
                 </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Date: {new Date(selectedAudit.auditDate).toLocaleDateString()}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Status: {selectedAudit.status}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Score: {selectedAudit.score ? `${selectedAudit.score}%` : 'N/A'}
+                  </Typography>
+                </Grid>
+              </Grid>
 
-                <Typography variant="h6" gutterBottom>
-                  Section Breakdown
-                </Typography>
-                <List dense>
-                  <ListItem>
-                    <ListItemText
-                      primary="Food Safety & Hygiene Procedures"
-                      secondary={`${selectedAudit.sections.foodSafetyHygiene.compliant}/${selectedAudit.sections.foodSafetyHygiene.total} compliant`}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText
-                      primary="Structural Requirements"
-                      secondary={`${selectedAudit.sections.structuralRequirements.compliant}/${selectedAudit.sections.structuralRequirements.total} compliant`}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText
-                      primary="Vehicles"
-                      secondary={`${selectedAudit.sections.vehicles.compliant}/${selectedAudit.sections.vehicles.total} compliant`}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText
-                      primary="Confidence in Management"
-                      secondary={`${selectedAudit.sections.confidenceInManagement.compliant}/${selectedAudit.sections.confidenceInManagement.total} compliant`}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText
-                      primary="Particulars"
-                      secondary={`${selectedAudit.sections.particulars.compliant}/${selectedAudit.sections.particulars.total} compliant`}
-                    />
-                  </ListItem>
-                </List>
+              <Typography variant="h6" gutterBottom>
+                Section Breakdown
+              </Typography>
+              <List dense>
+                <ListItem>
+                  <ListItemText
+                    primary="Food Safety & Hygiene Procedures"
+                    secondary={`${selectedAudit.sections.foodSafetyHygiene.compliant}/${selectedAudit.sections.foodSafetyHygiene.total} compliant`}
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemText
+                    primary="Structural Requirements"
+                    secondary={`${selectedAudit.sections.structuralRequirements.compliant}/${selectedAudit.sections.structuralRequirements.total} compliant`}
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemText
+                    primary="Vehicles"
+                    secondary={`${selectedAudit.sections.vehicles.compliant}/${selectedAudit.sections.vehicles.total} compliant`}
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemText
+                    primary="Confidence in Management"
+                    secondary={`${selectedAudit.sections.confidenceInManagement.compliant}/${selectedAudit.sections.confidenceInManagement.total} compliant`}
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemText
+                    primary="Particulars"
+                    secondary={`${selectedAudit.sections.particulars.compliant}/${selectedAudit.sections.particulars.total} compliant`}
+                  />
+                </ListItem>
+              </List>
 
-                {selectedAudit.nonCompliantIssues.length > 0 && (
-                  <>
-                    <Divider sx={{ my: 2 }} />
-                    <Typography variant="h6" gutterBottom color="error">
-                      Non-Compliant Issues
-                    </Typography>
-                    <List dense>
-                      {selectedAudit.nonCompliantIssues.map((issue, index) => (
-                        <ListItem key={index}>
-                          <ListItemText primary={issue} />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </>
-                )}
-              </Box>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDialog}>Close</Button>
-            {selectedAudit?.status === 'completed' && (
-              <Button
-                variant="contained"
-                startIcon={<DownloadIcon />}
-                onClick={() => console.log('Download full report')}
-              >
-                Download Report
-              </Button>
-            )}
-          </DialogActions>
-        </Dialog>
-      </Container>
-    </Layout>
+              {selectedAudit.nonCompliantIssues.length > 0 && (
+                <>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="h6" gutterBottom color="error">
+                    Non-Compliant Issues
+                  </Typography>
+                  <List dense>
+                    {selectedAudit.nonCompliantIssues.map((issue, index) => (
+                      <ListItem key={index}>
+                        <ListItemText primary={issue} />
+                      </ListItem>
+                    ))}
+                  </List>
+                </>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Close</Button>
+          {selectedAudit?.status === 'completed' && (
+            <Button
+              variant="contained"
+              startIcon={<DownloadIcon />}
+              onClick={() => console.log('Download full report')}
+            >
+              Download Report
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+    </Container>
   );
 };
 

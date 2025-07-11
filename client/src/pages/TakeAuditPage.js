@@ -29,7 +29,6 @@ import {
   Save as SaveIcon,
   Send as SendIcon
 } from '@mui/icons-material';
-import Layout from '../components/Layout';
 
 const TakeAuditPage = () => {
   const navigate = useNavigate();
@@ -188,154 +187,152 @@ const TakeAuditPage = () => {
   const progress = calculateProgress();
 
   return (
-    <Layout>
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-          <IconButton onClick={() => navigate('/admin/audits')} sx={{ mr: 2 }}>
-            <ArrowBackIcon />
-          </IconButton>
-          <Typography variant="h4" component="h1">
-            Pre-EHO Inspection Checklist
-          </Typography>
-        </Box>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      {/* Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+        <IconButton onClick={() => navigate('/admin/audits')} sx={{ mr: 2 }}>
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography variant="h4" component="h1">
+          Pre-EHO Inspection Checklist
+        </Typography>
+      </Box>
 
-        {/* Basic Information */}
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Audit Information
-          </Typography>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="Location"
-                value={auditData.location}
-                onChange={(e) => setAuditData(prev => ({ ...prev, location: e.target.value }))}
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="Auditor Name"
-                value={auditData.auditor}
-                onChange={(e) => setAuditData(prev => ({ ...prev, auditor: e.target.value }))}
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                type="date"
-                label="Audit Date"
-                value={auditData.auditDate}
-                onChange={(e) => setAuditData(prev => ({ ...prev, auditDate: e.target.value }))}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-          </Grid>
-        </Paper>
-
-        {/* Progress Indicator */}
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Typography variant="h6">
-              Audit Progress
-            </Typography>
-            <Chip 
-              label={`${Math.round(progress)}% Complete`} 
-              color={progress === 100 ? 'success' : 'primary'}
+      {/* Basic Information */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Audit Information
+        </Typography>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="Location"
+              value={auditData.location}
+              onChange={(e) => setAuditData(prev => ({ ...prev, location: e.target.value }))}
             />
-          </Box>
-          <LinearProgress 
-            variant="determinate" 
-            value={progress} 
-            sx={{ height: 8, borderRadius: 4 }}
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="Auditor Name"
+              value={auditData.auditor}
+              onChange={(e) => setAuditData(prev => ({ ...prev, auditor: e.target.value }))}
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              type="date"
+              label="Audit Date"
+              value={auditData.auditDate}
+              onChange={(e) => setAuditData(prev => ({ ...prev, auditDate: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {/* Progress Indicator */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="h6">
+            Audit Progress
+          </Typography>
+          <Chip 
+            label={`${Math.round(progress)}% Complete`} 
+            color={progress === 100 ? 'success' : 'primary'}
           />
-        </Paper>
+        </Box>
+        <LinearProgress 
+          variant="determinate" 
+          value={progress} 
+          sx={{ height: 8, borderRadius: 4 }}
+        />
+      </Paper>
 
-        {/* Audit Sections */}
-        {auditSections.map((section, sectionIndex) => (
-          <Accordion key={section.id} defaultExpanded={sectionIndex === 0} sx={{ mb: 2 }}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h6">
-                {section.title} ({section.items.length} items)
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              {section.items.map((item, itemIndex) => (
-                <Card key={itemIndex} sx={{ mb: 2 }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-                      <Typography variant="body2" sx={{ mr: 2, minWidth: '20px', fontWeight: 'bold' }}>
-                        {itemIndex + 1}.
-                      </Typography>
-                      <Typography variant="body2" sx={{ flexGrow: 1 }}>
-                        {item}
-                      </Typography>
-                    </Box>
-                    
-                    <Grid container spacing={2} alignItems="center">
-                      <Grid item xs={12} md={3}>
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={auditData[section.id]?.[`item_${itemIndex}_checked`] || false}
-                              onChange={(e) => handleCheckboxChange(section.id, itemIndex, e.target.checked)}
-                              color="success"
-                            />
-                          }
-                          label="Yes (Compliant)"
-                        />
-                      </Grid>
-                      <Grid item xs={12} md={9}>
-                        <TextField
-                          fullWidth
-                          multiline
-                          rows={2}
-                          label="Notes"
-                          placeholder="Add any observations, concerns, or additional details..."
-                          value={auditData[section.id]?.[`item_${itemIndex}_notes`] || ''}
-                          onChange={(e) => handleNotesChange(section.id, itemIndex, e.target.value)}
-                          size="small"
-                        />
-                      </Grid>
+      {/* Audit Sections */}
+      {auditSections.map((section, sectionIndex) => (
+        <Accordion key={section.id} defaultExpanded={sectionIndex === 0} sx={{ mb: 2 }}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography variant="h6">
+              {section.title} ({section.items.length} items)
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            {section.items.map((item, itemIndex) => (
+              <Card key={itemIndex} sx={{ mb: 2 }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+                    <Typography variant="body2" sx={{ mr: 2, minWidth: '20px', fontWeight: 'bold' }}>
+                      {itemIndex + 1}.
+                    </Typography>
+                    <Typography variant="body2" sx={{ flexGrow: 1 }}>
+                      {item}
+                    </Typography>
+                  </Box>
+                  
+                  <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12} md={3}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={auditData[section.id]?.[`item_${itemIndex}_checked`] || false}
+                            onChange={(e) => handleCheckboxChange(section.id, itemIndex, e.target.checked)}
+                            color="success"
+                          />
+                        }
+                        label="Yes (Compliant)"
+                      />
                     </Grid>
-                  </CardContent>
-                </Card>
-              ))}
-            </AccordionDetails>
-          </Accordion>
-        ))}
+                    <Grid item xs={12} md={9}>
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={2}
+                        label="Notes"
+                        placeholder="Add any observations, concerns, or additional details..."
+                        value={auditData[section.id]?.[`item_${itemIndex}_notes`] || ''}
+                        onChange={(e) => handleNotesChange(section.id, itemIndex, e.target.value)}
+                        size="small"
+                      />
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            ))}
+          </AccordionDetails>
+        </Accordion>
+      ))}
 
-        {/* Action Buttons */}
-        <Paper sx={{ p: 3, mt: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-            <Button
-              variant="outlined"
-              startIcon={<SaveIcon />}
-              onClick={handleSaveAudit}
-              size="large"
-            >
-              Save as Draft
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<SendIcon />}
-              onClick={handleSubmitAudit}
-              size="large"
-              disabled={progress < 100}
-            >
-              Submit Audit
-            </Button>
-          </Box>
-          {progress < 100 && (
-            <Alert severity="info" sx={{ mt: 2 }}>
-              Please complete all audit items before submitting.
-            </Alert>
-          )}
-        </Paper>
-      </Container>
-    </Layout>
+      {/* Action Buttons */}
+      <Paper sx={{ p: 3, mt: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Button
+            variant="outlined"
+            startIcon={<SaveIcon />}
+            onClick={handleSaveAudit}
+            size="large"
+          >
+            Save as Draft
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<SendIcon />}
+            onClick={handleSubmitAudit}
+            size="large"
+            disabled={progress < 100}
+          >
+            Submit Audit
+          </Button>
+        </Box>
+        {progress < 100 && (
+          <Alert severity="info" sx={{ mt: 2 }}>
+            Please complete all audit items before submitting.
+          </Alert>
+        )}
+      </Paper>
+    </Container>
   );
 };
 

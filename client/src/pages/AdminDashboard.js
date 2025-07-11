@@ -21,6 +21,7 @@ import {
   ChecklistRtl as ChecklistIcon,
   Analytics as AnalyticsIcon,
   Assessment as AssessmentIcon,
+  FactCheck as FactCheckIcon,
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
@@ -50,6 +51,13 @@ const AdminDashboard = () => {
       icon: <AssessmentIcon sx={{ fontSize: 40 }} />,
       path: '/compliance-reports',
       buttonText: 'Generate Reports',
+    },
+    {
+      title: 'Audits',
+      description: 'Schedule, conduct, and manage food safety audits and inspections.',
+      icon: <FactCheckIcon sx={{ fontSize: 40 }} />,
+      path: '/admin/audits',
+      buttonText: 'Manage Audits',
     },
     {
       title: 'User Management',

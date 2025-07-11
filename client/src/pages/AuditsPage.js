@@ -23,19 +23,19 @@ const AuditsPage = () => {
 
   const auditCards = [
     {
-      title: 'View Audits',
-      description: 'View all completed and scheduled food safety audits and their results.',
-      icon: <VisibilityIcon sx={{ fontSize: 40 }} />,
-      path: '/admin/audits/view',
-      buttonText: 'View All Audits',
-      color: 'primary'
-    },
-    {
       title: 'Take Audit',
       description: 'Conduct a new food safety audit or inspection at a location.',
       icon: <FactCheckIcon sx={{ fontSize: 40 }} />,
       path: '/admin/audits/take',
       buttonText: 'Start Audit',
+      color: 'primary'
+    },
+    {
+      title: 'Audit Records',
+      description: 'View all completed and scheduled food safety audits and their results.',
+      icon: <VisibilityIcon sx={{ fontSize: 40 }} />,
+      path: '/admin/audits/view',
+      buttonText: 'View Records',
       color: 'secondary'
     }
   ];

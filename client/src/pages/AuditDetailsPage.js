@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
@@ -18,6 +18,7 @@ import {
   Button,
   Dialog,
   DialogTitle,
+  Alert,
   DialogContent,
   DialogActions,
   Avatar,
@@ -41,40 +42,74 @@ const AuditDetailsPage = () => {
   const { user } = useSelector((state) => state.auth);
   const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [auditData, setAuditData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Mock audit data - in real app, would fetch by auditId from API
-  const auditData = {
-    id: auditId,
-    location: user?.role === 'admin' ? 'location_id_1' : user?.siteLocation?._id || user?.siteLocation || 'location_id_1',
-    locationName: user?.role === 'admin' ? 'Main Kitchen - St. Mary\'s Primary' : user?.siteLocation?.name || user?.location || 'Your Kitchen',
-    auditor: 'John Smith',
-    auditDate: '2024-01-15',
-    status: 'completed',
-    score: 95,
-    // Sample data structure with photos for demonstration
-    foodSafetyHygiene: {
-      item_0_checked: true,
-      item_0_notes: 'All staff properly equipped with clean uniforms and protective gear.',
-      item_0_photos: [
-        {
-          id: 1,
-          name: 'staff_uniforms.jpg',
-          data: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=',
-          timestamp: '2024-01-15T10:30:00.000Z'
+  // Fetch audit data by ID from API
+  useEffect(() => {
+    const fetchAudit = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        
+        const response = await fetch(`http://localhost:5000/api/audits/${auditId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-auth-token': localStorage.getItem('token')
+          }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.msg || 'Failed to fetch audit');
         }
-      ],
-      item_1_checked: false,
-      item_1_notes: 'Found cooked chicken stored below raw beef in walk-in cooler. Immediate correction required.',
-      item_1_photos: [
-        {
-          id: 2,
-          name: 'food_storage_issue.jpg',
-          data: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=',
-          timestamp: '2024-01-15T10:35:00.000Z'
-        }
-      ]
+
+        const audit = await response.json();
+        
+        // Transform API data to match expected format
+        const transformedData = {
+          id: audit._id,
+          location: audit.location._id,
+          locationName: audit.location.name,
+          auditor: audit.auditor,
+          auditDate: new Date(audit.auditDate).toISOString().split('T')[0],
+          status: audit.status,
+          score: audit.score || 0,
+          totalItems: audit.totalItems || 55,
+          compliantItems: audit.compliantItems || 0,
+          nonCompliantItems: audit.nonCompliantItems || 0,
+          ...audit.sections.reduce((acc, section) => {
+            const sectionData = {};
+            section.items.forEach((item, index) => {
+              if (item.checked !== undefined) {
+                sectionData[`item_${index}_checked`] = item.checked;
+              }
+              if (item.notes) {
+                sectionData[`item_${index}_notes`] = item.notes;
+              }
+              if (item.photos && item.photos.length > 0) {
+                sectionData[`item_${index}_photos`] = item.photos;
+              }
+            });
+            acc[section.sectionId] = sectionData;
+            return acc;
+          }, {})
+        };
+        
+        setAuditData(transformedData);
+      } catch (err) {
+        setError(`Failed to load audit: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (auditId) {
+      fetchAudit();
     }
-  };
+  }, [auditId]);
 
   const auditSections = [
     {
@@ -104,20 +139,37 @@ const AuditDetailsPage = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-        <IconButton onClick={() => navigate('/admin/audits/view')} sx={{ mr: 2 }}>
-          <ArrowBackIcon />
-        </IconButton>
-        <Box>
-          <Typography variant="h4" component="h1">
-            Audit Details - {auditData.locationName}
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            Conducted by {auditData.auditor} on {new Date(auditData.auditDate).toLocaleDateString()}
-          </Typography>
+      {/* Loading State */}
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+          <Typography>Loading audit details...</Typography>
         </Box>
-      </Box>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <Alert severity="error" sx={{ mb: 4 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Main Content */}
+      {!loading && !error && auditData && (
+        <>
+          {/* Header */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+            <IconButton onClick={() => navigate('/admin/audits/view')} sx={{ mr: 2 }}>
+              <ArrowBackIcon />
+            </IconButton>
+            <Box>
+              <Typography variant="h4" component="h1">
+                Audit Details - {auditData.locationName}
+              </Typography>
+              <Typography variant="subtitle1" color="text.secondary">
+                Conducted by {auditData.auditor} on {new Date(auditData.auditDate).toLocaleDateString()}
+              </Typography>
+            </Box>
+          </Box>
 
       {/* Audit Summary */}
       <Paper sx={{ p: 3, mb: 3 }}>
@@ -281,6 +333,8 @@ const AuditDetailsPage = () => {
           <Button onClick={handleClosePhotoViewer}>Close</Button>
         </DialogActions>
       </Dialog>
+        </>
+      )}
     </Container>
   );
 };

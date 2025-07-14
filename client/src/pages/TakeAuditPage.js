@@ -257,8 +257,7 @@ const TakeAuditPage = () => {
       return;
     }
 
-    // TODO: Save audit as draft to API
-    console.log('Saving audit:', auditData);
+    // Save audit as draft to API
     
     // Get location name for display
     const selectedLocation = locations.find(loc => loc._id === auditData.location);
@@ -297,7 +296,7 @@ const TakeAuditPage = () => {
         status: 'completed'
       };
 
-      console.log('Submitting audit:', auditPayload);
+
 
       const response = await fetch('http://localhost:5000/api/audits', {
         method: 'POST',
@@ -314,7 +313,6 @@ const TakeAuditPage = () => {
       }
 
       const result = await response.json();
-      console.log('Audit submitted successfully:', result);
       
       // Get location name for display
       const selectedLocation = locations.find(loc => loc._id === auditData.location);

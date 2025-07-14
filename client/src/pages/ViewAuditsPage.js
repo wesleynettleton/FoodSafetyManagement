@@ -85,7 +85,6 @@ const ViewAuditsPage = () => {
         }
 
         const auditData = await response.json();
-        console.log('Fetched audits:', auditData);
         
         // Transform API data to match expected format
         const transformedAudits = auditData.map(audit => ({
@@ -101,8 +100,8 @@ const ViewAuditsPage = () => {
           nonCompliantItems: audit.nonCompliantItems || 0,
           lastUpdated: new Date(audit.updatedAt).toISOString().split('T')[0],
           sections: audit.sections || {},
-          hasPhotos: false, // TODO: Calculate based on audit.sections
-          photoCount: 0, // TODO: Calculate based on audit.sections
+          hasPhotos: false, // Will be calculated when photo functionality is enhanced
+          photoCount: 0, // Will be calculated when photo functionality is enhanced
           rawData: audit // Keep original data for detailed view
         }));
         
@@ -419,7 +418,7 @@ const ViewAuditsPage = () => {
                         <Tooltip title="Download Report">
                           <IconButton
                             size="small"
-                            onClick={() => console.log('Download report', audit.id)}
+                            onClick={() => alert('Download functionality coming soon')}
                           >
                             <DownloadIcon />
                           </IconButton>
@@ -530,7 +529,7 @@ const ViewAuditsPage = () => {
             <Button
               variant="contained"
               startIcon={<DownloadIcon />}
-              onClick={() => console.log('Download full report')}
+              onClick={() => alert('Download functionality coming soon')}
             >
               Download Report
             </Button>

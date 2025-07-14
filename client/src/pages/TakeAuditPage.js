@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -28,7 +28,12 @@ import {
   ListItem,
   ListItemAvatar,
   ListItemText,
-  ListItemSecondaryAction
+  ListItemSecondaryAction,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  CircularProgress
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -39,6 +44,7 @@ import {
   Delete as DeleteIcon,
   Image as ImageIcon
 } from '@mui/icons-material';
+import { locationsAPI } from '../services/api';
 
 const TakeAuditPage = () => {
   const navigate = useNavigate();
@@ -56,6 +62,26 @@ const TakeAuditPage = () => {
     confidenceInManagement: {},
     particulars: {}
   });
+
+  const [locations, setLocations] = useState([]);
+  const [loadingLocations, setLoadingLocations] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchLocations();
+  }, []);
+
+  const fetchLocations = async () => {
+    try {
+      const response = await locationsAPI.getAll();
+      setLocations(response.data);
+      setLoadingLocations(false);
+    } catch (err) {
+      setError('Failed to fetch locations');
+      setLoadingLocations(false);
+      console.error(err);
+    }
+  };
 
   const auditSections = [
     {
@@ -225,15 +251,37 @@ const TakeAuditPage = () => {
   };
 
   const handleSaveAudit = () => {
-    // TODO: Save audit as draft
+    // Validate required fields for draft save
+    if (!auditData.location || !auditData.auditor || !auditData.auditDate) {
+      alert('Please fill in all required fields: Location, Auditor Name, and Audit Date');
+      return;
+    }
+
+    // TODO: Save audit as draft to API
     console.log('Saving audit:', auditData);
-    alert('Audit saved as draft!');
+    
+    // Get location name for display
+    const selectedLocation = locations.find(loc => loc._id === auditData.location);
+    const locationName = selectedLocation ? selectedLocation.name : 'Unknown Location';
+    
+    alert(`Audit draft saved for ${locationName}!`);
   };
 
   const handleSubmitAudit = () => {
-    // TODO: Submit completed audit
+    // Validate required fields
+    if (!auditData.location || !auditData.auditor || !auditData.auditDate) {
+      alert('Please fill in all required fields: Location, Auditor Name, and Audit Date');
+      return;
+    }
+
+    // TODO: Submit completed audit to API
     console.log('Submitting audit:', auditData);
-    alert('Audit submitted successfully!');
+    
+    // Get location name for display
+    const selectedLocation = locations.find(loc => loc._id === auditData.location);
+    const locationName = selectedLocation ? selectedLocation.name : 'Unknown Location';
+    
+    alert(`Audit submitted successfully for ${locationName}!`);
     navigate('/admin/audits/view');
   };
 
@@ -256,14 +304,39 @@ const TakeAuditPage = () => {
         <Typography variant="h6" gutterBottom>
           Audit Information
         </Typography>
+        
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+        
         <Grid container spacing={3}>
           <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              label="Location"
-              value={auditData.location}
-              onChange={(e) => setAuditData(prev => ({ ...prev, location: e.target.value }))}
-            />
+            <FormControl fullWidth disabled={loadingLocations}>
+              <InputLabel>Location *</InputLabel>
+              <Select
+                value={auditData.location}
+                label="Location *"
+                onChange={(e) => setAuditData(prev => ({ ...prev, location: e.target.value }))}
+                required
+              >
+                {loadingLocations ? (
+                  <MenuItem disabled>
+                    <CircularProgress size={20} sx={{ mr: 1 }} />
+                    Loading locations...
+                  </MenuItem>
+                ) : locations.length === 0 ? (
+                  <MenuItem disabled>No locations available</MenuItem>
+                ) : (
+                  locations.map((location) => (
+                    <MenuItem key={location._id} value={location._id}>
+                      {location.name}
+                    </MenuItem>
+                  ))
+                )}
+              </Select>
+            </FormControl>
           </Grid>
           <Grid item xs={12} md={4}>
             <TextField
@@ -271,6 +344,7 @@ const TakeAuditPage = () => {
               label="Auditor Name"
               value={auditData.auditor}
               onChange={(e) => setAuditData(prev => ({ ...prev, auditor: e.target.value }))}
+              required
             />
           </Grid>
           <Grid item xs={12} md={4}>
@@ -281,6 +355,7 @@ const TakeAuditPage = () => {
               value={auditData.auditDate}
               onChange={(e) => setAuditData(prev => ({ ...prev, auditDate: e.target.value }))}
               InputLabelProps={{ shrink: true }}
+              required
             />
           </Grid>
         </Grid>
@@ -446,14 +521,17 @@ const TakeAuditPage = () => {
             startIcon={<SendIcon />}
             onClick={handleSubmitAudit}
             size="large"
-            disabled={progress < 100}
+            disabled={progress < 100 || !auditData.location || !auditData.auditor || !auditData.auditDate}
           >
             Submit Audit
           </Button>
         </Box>
-        {progress < 100 && (
+        {(progress < 100 || !auditData.location || !auditData.auditor || !auditData.auditDate) && (
           <Alert severity="info" sx={{ mt: 2 }}>
-            Please complete all audit items before submitting.
+            {!auditData.location || !auditData.auditor || !auditData.auditDate 
+              ? "Please fill in all required fields (Location, Auditor Name, and Audit Date) and complete all audit items before submitting."
+              : "Please complete all audit items before submitting."
+            }
           </Alert>
         )}
       </Paper>

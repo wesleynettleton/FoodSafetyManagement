@@ -45,7 +45,8 @@ const AuditDetailsPage = () => {
   // Mock audit data - in real app, would fetch by auditId from API
   const auditData = {
     id: auditId,
-    location: user?.role === 'admin' ? 'Main Kitchen - St. Mary\'s Primary' : user?.location || 'Your Kitchen',
+    location: user?.role === 'admin' ? 'location_id_1' : user?.siteLocation?._id || user?.siteLocation || 'location_id_1',
+    locationName: user?.role === 'admin' ? 'Main Kitchen - St. Mary\'s Primary' : user?.siteLocation?.name || user?.location || 'Your Kitchen',
     auditor: 'John Smith',
     auditDate: '2024-01-15',
     status: 'completed',
@@ -110,7 +111,7 @@ const AuditDetailsPage = () => {
         </IconButton>
         <Box>
           <Typography variant="h4" component="h1">
-            Audit Details - {auditData.location}
+            Audit Details - {auditData.locationName}
           </Typography>
           <Typography variant="subtitle1" color="text.secondary">
             Conducted by {auditData.auditor} on {new Date(auditData.auditDate).toLocaleDateString()}

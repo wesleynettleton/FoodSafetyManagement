@@ -66,7 +66,8 @@ const ViewAuditsPage = () => {
     // Sample audit with photos for demonstration
     {
       id: 1,
-      location: user?.role === 'admin' ? 'Main Kitchen - St. Mary\'s Primary' : user?.location || 'Your Kitchen',
+      location: user?.role === 'admin' ? 'location_id_1' : user?.siteLocation?._id || user?.siteLocation || 'location_id_1',
+      locationName: user?.role === 'admin' ? 'Main Kitchen - St. Mary\'s Primary' : user?.siteLocation?.name || user?.location || 'Your Kitchen',
       auditor: 'John Smith',
       auditDate: '2024-01-15',
       status: 'completed',
@@ -113,12 +114,12 @@ const ViewAuditsPage = () => {
 
   // Filter audits based on user role and location
   const filteredAudits = audits.filter(audit => {
-    const matchesSearch = audit.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = audit.locationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          audit.auditor.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || audit.status === statusFilter;
     
     // If user is kitchen staff, only show audits for their location
-    const matchesLocation = user?.role === 'admin' || audit.location === user?.location;
+    const matchesLocation = user?.role === 'admin' || audit.location === user?.siteLocation?._id || audit.location === user?.siteLocation;
     
     return matchesSearch && matchesStatus && matchesLocation;
   });
@@ -301,7 +302,7 @@ const ViewAuditsPage = () => {
                     {isAdmin && (
                       <TableCell>
                         <Typography variant="body2" fontWeight="medium">
-                          {audit.location}
+                          {audit.locationName}
                         </Typography>
                       </TableCell>
                     )}
@@ -396,7 +397,7 @@ const ViewAuditsPage = () => {
         fullWidth
       >
         <DialogTitle>
-          Audit Details - {selectedAudit?.location}
+          Audit Details - {selectedAudit?.locationName}
         </DialogTitle>
         <DialogContent>
           {selectedAudit && (

@@ -17,7 +17,8 @@ import {
   Assignment as AssignmentIcon,
   ChecklistRtl as ChecklistIcon,
   Analytics as AnalyticsIcon,
-  Assessment as AssessmentIcon
+  Assessment as AssessmentIcon,
+  FactCheck as FactCheckIcon
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
@@ -45,6 +46,12 @@ const KitchenStaffDashboard = () => {
       description: 'Log temperatures and safety checks.',
       icon: <AssignmentIcon sx={{ fontSize: 40 }} />,
       path: '/take-records'
+    },
+    {
+      title: 'View Audits',
+      description: 'View audit results and reports for your location.',
+      icon: <FactCheckIcon sx={{ fontSize: 40 }} />,
+      path: '/admin/audits/view'
     },
     {
       title: 'Checklists',

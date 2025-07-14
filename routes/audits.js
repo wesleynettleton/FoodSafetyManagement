@@ -71,7 +71,8 @@ router.get('/', auth, async (req, res) => {
         const audits = await Audit.find(query)
             .populate('location', 'name address')
             .populate('createdBy', 'name')
-            .sort({ auditDate: -1 });
+            .sort({ auditDate: -1 })
+            .limit(100); // Limit to 100 most recent audits
 
         res.json(audits);
     } catch (err) {
@@ -208,7 +209,8 @@ router.get('/location/:locationId', auth, async (req, res) => {
         const audits = await Audit.find({ location: req.params.locationId })
             .populate('location', 'name address')
             .populate('createdBy', 'name')
-            .sort({ auditDate: -1 });
+            .sort({ auditDate: -1 })
+            .limit(100); // Limit to 100 most recent audits
 
         res.json(audits);
     } catch (err) {

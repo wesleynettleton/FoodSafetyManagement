@@ -75,6 +75,11 @@ auditSchema.pre('save', function(next) {
   next();
 });
 
+// Add indexes for efficient sorting and querying
+auditSchema.index({ auditDate: -1 });
+auditSchema.index({ location: 1, auditDate: -1 });
+auditSchema.index({ status: 1 });
+
 // Method to calculate compliance statistics
 auditSchema.methods.calculateStats = function() {
   let totalItems = 0;

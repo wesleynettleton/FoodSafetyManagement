@@ -71,7 +71,7 @@ const ViewAuditsPage = () => {
         setLoading(true);
         setError('');
         
-        const response = await fetch('http://localhost:5000/api/audits', {
+        const response = await fetch('http://localhost:5001/api/audits', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

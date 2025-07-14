@@ -53,7 +53,7 @@ const AuditDetailsPage = () => {
         setLoading(true);
         setError('');
         
-        const response = await fetch(`http://localhost:5000/api/audits/${auditId}`, {
+        const response = await fetch(`http://localhost:5001/api/audits/${auditId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

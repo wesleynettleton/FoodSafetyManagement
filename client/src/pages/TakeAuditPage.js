@@ -267,22 +267,65 @@ const TakeAuditPage = () => {
     alert(`Audit draft saved for ${locationName}!`);
   };
 
-  const handleSubmitAudit = () => {
+  const handleSubmitAudit = async () => {
     // Validate required fields
     if (!auditData.location || !auditData.auditor || !auditData.auditDate) {
-      alert('Please fill in all required fields: Location, Auditor Name, and Audit Date');
+      setError('Please fill in all required fields: Location, Auditor Name, and Audit Date');
       return;
     }
 
-    // TODO: Submit completed audit to API
-    console.log('Submitting audit:', auditData);
-    
-    // Get location name for display
-    const selectedLocation = locations.find(loc => loc._id === auditData.location);
-    const locationName = selectedLocation ? selectedLocation.name : 'Unknown Location';
-    
-    alert(`Audit submitted successfully for ${locationName}!`);
-    navigate('/admin/audits/view');
+    try {
+      setError('');
+      
+      // Transform audit data into the format expected by the API
+      const sections = auditSections.map(section => ({
+        sectionId: section.id,
+        sectionTitle: section.title,
+        items: section.items.map((item, index) => ({
+          itemIndex: index,
+          checked: auditData[section.id] ? auditData[section.id][`item_${index}_checked`] : undefined,
+          notes: auditData[section.id] ? auditData[section.id][`item_${index}_notes`] || '' : '',
+          photos: auditData[section.id] ? auditData[section.id][`item_${index}_photos`] || [] : []
+        }))
+      }));
+
+      const auditPayload = {
+        location: auditData.location,
+        auditor: auditData.auditor,
+        auditDate: auditData.auditDate,
+        sections: sections,
+        status: 'completed'
+      };
+
+      console.log('Submitting audit:', auditPayload);
+
+      const response = await fetch('http://localhost:5000/api/audits', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': localStorage.getItem('token')
+        },
+        body: JSON.stringify(auditPayload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.msg || 'Failed to submit audit');
+      }
+
+      const result = await response.json();
+      console.log('Audit submitted successfully:', result);
+      
+      // Get location name for display
+      const selectedLocation = locations.find(loc => loc._id === auditData.location);
+      const locationName = selectedLocation ? selectedLocation.name : 'Unknown Location';
+      
+      alert(`Audit submitted successfully for ${locationName}!`);
+      navigate('/admin/audits/view');
+    } catch (err) {
+      console.error('Error submitting audit:', err);
+      setError(`Failed to submit audit: ${err.message}`);
+    }
   };
 
   const progress = calculateProgress();

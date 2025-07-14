@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
@@ -60,38 +60,64 @@ const ViewAuditsPage = () => {
   const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [auditPhotos, setAuditPhotos] = useState({});
+  const [audits, setAudits] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Empty audit data - in real app, this would come from API
-  const [audits] = useState([
-    // Sample audit with photos for demonstration
-    {
-      id: 1,
-      location: user?.role === 'admin' ? 'location_id_1' : user?.siteLocation?._id || user?.siteLocation || 'location_id_1',
-      locationName: user?.role === 'admin' ? 'Main Kitchen - St. Mary\'s Primary' : user?.siteLocation?.name || user?.location || 'Your Kitchen',
-      auditor: 'John Smith',
-      auditDate: '2024-01-15',
-      status: 'completed',
-      score: 95,
-      totalItems: 55,
-      compliantItems: 52,
-      nonCompliantItems: 3,
-      lastUpdated: '2024-01-15',
-      sections: {
-        foodSafetyHygiene: { compliant: 13, total: 14 },
-        structuralRequirements: { compliant: 15, total: 16 },
-        vehicles: { compliant: 2, total: 2 },
-        confidenceInManagement: { compliant: 14, total: 15 },
-        particulars: { compliant: 8, total: 8 }
-      },
-      nonCompliantIssues: [
-        'Staff jewellery policy needs clarification',
-        'One freezer temperature slightly above -18°C',
-        'Training records need updating for 2 staff members'
-      ],
-      hasPhotos: true,
-      photoCount: 3
-    }
-  ]);
+  // Fetch audits from API
+  useEffect(() => {
+    const fetchAudits = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        
+        const response = await fetch('http://localhost:5000/api/audits', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-auth-token': localStorage.getItem('token')
+          }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.msg || 'Failed to fetch audits');
+        }
+
+        const auditData = await response.json();
+        console.log('Fetched audits:', auditData);
+        
+        // Transform API data to match expected format
+        const transformedAudits = auditData.map(audit => ({
+          id: audit._id,
+          location: audit.location._id,
+          locationName: audit.location.name,
+          auditor: audit.auditor,
+          auditDate: new Date(audit.auditDate).toISOString().split('T')[0],
+          status: audit.status,
+          score: audit.score || 0,
+          totalItems: audit.totalItems || 55,
+          compliantItems: audit.compliantItems || 0,
+          nonCompliantItems: audit.nonCompliantItems || 0,
+          lastUpdated: new Date(audit.updatedAt).toISOString().split('T')[0],
+          sections: audit.sections || {},
+          hasPhotos: false, // TODO: Calculate based on audit.sections
+          photoCount: 0, // TODO: Calculate based on audit.sections
+          rawData: audit // Keep original data for detailed view
+        }));
+        
+        setAudits(transformedAudits);
+      } catch (err) {
+        console.error('Error fetching audits:', err);
+        setError(`Failed to load audits: ${err.message}`);
+        setAudits([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAudits();
+  }, []);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -184,6 +210,25 @@ const ViewAuditsPage = () => {
           </Button>
         )}
       </Box>
+
+      {/* Loading and Error States */}
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+          <Typography>Loading audits...</Typography>
+        </Box>
+      )}
+
+      {error && !loading && (
+        <Alert severity="error" sx={{ mb: 4 }}>
+          {error}
+        </Alert>
+      )}
+
+      {!loading && !error && audits.length === 0 && (
+        <Alert severity="info" sx={{ mb: 4 }}>
+          No audits found. {isAdmin ? 'Create your first audit to get started.' : 'No audits have been conducted for your location yet.'}
+        </Alert>
+      )}
 
       {/* Statistics Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>

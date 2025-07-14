@@ -80,6 +80,7 @@ require('./models/Location');
 require('./models/User');
 require('./models/Equipment');
 require('./models/Record');
+require('./models/Audit');
 
 // API Routes
 const auth = require('./routes/auth');
@@ -88,6 +89,7 @@ const records = require('./routes/records');
 const equipment = require('./routes/equipment');
 const locations = require('./routes/locations');
 const analytics = require('./routes/analytics');
+const audits = require('./routes/audits');
 
 // Define Routes
 app.use('/api/users', users);
@@ -96,6 +98,7 @@ app.use('/api/records', records);
 app.use('/api/equipment', equipment);
 app.use('/api/locations', locations);
 app.use('/api/analytics', analytics);
+app.use('/api/audits', audits);
 
 // Serve static files from the React build directory
 const buildPath = path.join(__dirname, 'client/build');

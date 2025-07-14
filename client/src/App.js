@@ -44,6 +44,7 @@ import AuditsPage from './pages/AuditsPage';
 import TakeAuditPage from './pages/TakeAuditPage';
 import ViewAuditsPage from './pages/ViewAuditsPage';
 import AuditDetailsPage from './pages/AuditDetailsPage';
+import AdminRecordsPage from './pages/AdminRecordsPage';
 
 const theme = createTheme({
   palette: {
@@ -259,6 +260,15 @@ function App() {
               element={
                 <PrivateRoute>
                   <AnalyticsDashboard />
+                </PrivateRoute>
+              }
+            />
+            {/* Admin Records Route */}
+            <Route
+              path="/admin/records"
+              element={
+                <PrivateRoute>
+                  <AdminRecordsPage />
                 </PrivateRoute>
               }
             />

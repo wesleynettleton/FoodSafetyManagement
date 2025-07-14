@@ -32,7 +32,11 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Alert
+  Alert,
+  Badge,
+  Avatar,
+  ImageList,
+  ImageListItem
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -41,7 +45,9 @@ import {
   Edit as EditIcon,
   Add as AddIcon,
   Search as SearchIcon,
-  FilterList as FilterListIcon
+  FilterList as FilterListIcon,
+  PhotoCamera as PhotoCameraIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 
 const ViewAuditsPage = () => {
@@ -51,9 +57,40 @@ const ViewAuditsPage = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedAudit, setSelectedAudit] = useState(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [auditPhotos, setAuditPhotos] = useState({});
 
   // Empty audit data - in real app, this would come from API
-  const [audits] = useState([]);
+  const [audits] = useState([
+    // Sample audit with photos for demonstration
+    {
+      id: 1,
+      location: user?.role === 'admin' ? 'Main Kitchen - St. Mary\'s Primary' : user?.location || 'Your Kitchen',
+      auditor: 'John Smith',
+      auditDate: '2024-01-15',
+      status: 'completed',
+      score: 95,
+      totalItems: 55,
+      compliantItems: 52,
+      nonCompliantItems: 3,
+      lastUpdated: '2024-01-15',
+      sections: {
+        foodSafetyHygiene: { compliant: 13, total: 14 },
+        structuralRequirements: { compliant: 15, total: 16 },
+        vehicles: { compliant: 2, total: 2 },
+        confidenceInManagement: { compliant: 14, total: 15 },
+        particulars: { compliant: 8, total: 8 }
+      },
+      nonCompliantIssues: [
+        'Staff jewellery policy needs clarification',
+        'One freezer temperature slightly above -18°C',
+        'Training records need updating for 2 staff members'
+      ],
+      hasPhotos: true,
+      photoCount: 3
+    }
+  ]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -94,6 +131,26 @@ const ViewAuditsPage = () => {
   const handleCloseDialog = () => {
     setViewDialogOpen(false);
     setSelectedAudit(null);
+  };
+
+  const handlePhotoView = (photo) => {
+    setSelectedPhoto(photo);
+    setPhotoViewerOpen(true);
+  };
+
+  const handleClosePhotoViewer = () => {
+    setPhotoViewerOpen(false);
+    setSelectedPhoto(null);
+  };
+
+  const getPhotoCount = (sectionData) => {
+    let totalPhotos = 0;
+    Object.keys(sectionData || {}).forEach(key => {
+      if (key.includes('_photos') && Array.isArray(sectionData[key])) {
+        totalPhotos += sectionData[key].length;
+      }
+    });
+    return totalPhotos;
   };
 
   const calculateProgress = (audit) => {
@@ -234,6 +291,7 @@ const ViewAuditsPage = () => {
                   <TableCell>Status</TableCell>
                   <TableCell>Progress</TableCell>
                   <TableCell>Score</TableCell>
+                  <TableCell>Photos</TableCell>
                   <TableCell align="center">Actions</TableCell>
                 </TableRow>
               </TableHead>
@@ -278,11 +336,25 @@ const ViewAuditsPage = () => {
                         </Typography>
                       )}
                     </TableCell>
+                    <TableCell>
+                      {audit.hasPhotos ? (
+                        <Chip
+                          icon={<PhotoCameraIcon />}
+                          label={`${audit.photoCount || 0} photos`}
+                          size="small"
+                          color="info"
+                        />
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          No photos
+                        </Typography>
+                      )}
+                    </TableCell>
                     <TableCell align="center">
                       <Tooltip title="View Details">
                         <IconButton
                           size="small"
-                          onClick={() => handleViewAudit(audit)}
+                          onClick={() => navigate(`/admin/audits/details/${audit.id}`)}
                         >
                           <VisibilityIcon />
                         </IconButton>
@@ -417,6 +489,52 @@ const ViewAuditsPage = () => {
               Download Report
             </Button>
           )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Photo Viewer Modal */}
+      <Dialog
+        open={photoViewerOpen}
+        onClose={handleClosePhotoViewer}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: { minHeight: '70vh' }
+        }}
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">
+              Photo Evidence
+            </Typography>
+            <IconButton onClick={handleClosePhotoViewer}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {selectedPhoto && (
+            <Box sx={{ textAlign: 'center' }}>
+              <img
+                src={selectedPhoto.data}
+                alt={selectedPhoto.name}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '60vh',
+                  objectFit: 'contain'
+                }}
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                {selectedPhoto.name}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Uploaded: {new Date(selectedPhoto.timestamp).toLocaleString()}
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClosePhotoViewer}>Close</Button>
         </DialogActions>
       </Dialog>
     </Container>

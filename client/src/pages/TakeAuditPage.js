@@ -21,13 +21,23 @@ import {
   AccordionDetails,
   LinearProgress,
   Alert,
-  Chip
+  Chip,
+  Badge,
+  Avatar,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  ListItemSecondaryAction
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   ExpandMore as ExpandMoreIcon,
   Save as SaveIcon,
-  Send as SendIcon
+  Send as SendIcon,
+  PhotoCamera as PhotoCameraIcon,
+  Delete as DeleteIcon,
+  Image as ImageIcon
 } from '@mui/icons-material';
 
 const TakeAuditPage = () => {
@@ -153,6 +163,49 @@ const TakeAuditPage = () => {
         [`item_${itemIndex}_notes`]: notes
       }
     }));
+  };
+
+  const handlePhotoUpload = (sectionId, itemIndex, event) => {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const photoData = {
+          id: Date.now() + Math.random(),
+          name: file.name,
+          data: e.target.result,
+          timestamp: new Date().toISOString()
+        };
+
+        setAuditData(prev => {
+          const currentPhotos = prev[sectionId]?.[`item_${itemIndex}_photos`] || [];
+          return {
+            ...prev,
+            [sectionId]: {
+              ...prev[sectionId],
+              [`item_${itemIndex}_photos`]: [...currentPhotos, photoData]
+            }
+          };
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handlePhotoDelete = (sectionId, itemIndex, photoId) => {
+    setAuditData(prev => {
+      const currentPhotos = prev[sectionId]?.[`item_${itemIndex}_photos`] || [];
+      const updatedPhotos = currentPhotos.filter(photo => photo.id !== photoId);
+      return {
+        ...prev,
+        [sectionId]: {
+          ...prev[sectionId],
+          [`item_${itemIndex}_photos`]: updatedPhotos
+        }
+      };
+    });
   };
 
   const calculateProgress = () => {
@@ -298,6 +351,78 @@ const TakeAuditPage = () => {
                       />
                     </Grid>
                   </Grid>
+
+                  {/* Photo Upload Section */}
+                  <Box sx={{ mt: 2 }}>
+                    <Grid container spacing={2} alignItems="center">
+                      <Grid item>
+                        <input
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          id={`photo-upload-${section.id}-${itemIndex}`}
+                          multiple
+                          type="file"
+                          onChange={(e) => handlePhotoUpload(section.id, itemIndex, e)}
+                        />
+                        <label htmlFor={`photo-upload-${section.id}-${itemIndex}`}>
+                          <Button
+                            variant="outlined"
+                            component="span"
+                            startIcon={<PhotoCameraIcon />}
+                            size="small"
+                          >
+                            Add Photo
+                          </Button>
+                        </label>
+                      </Grid>
+                      {auditData[section.id]?.[`item_${itemIndex}_photos`]?.length > 0 && (
+                        <Grid item>
+                          <Chip
+                            icon={<ImageIcon />}
+                            label={`${auditData[section.id][`item_${itemIndex}_photos`].length} photo(s)`}
+                            size="small"
+                            color="primary"
+                          />
+                        </Grid>
+                      )}
+                    </Grid>
+
+                    {/* Photo Preview List */}
+                    {auditData[section.id]?.[`item_${itemIndex}_photos`]?.length > 0 && (
+                      <Box sx={{ mt: 2 }}>
+                        <Typography variant="caption" color="text.secondary" gutterBottom>
+                          Uploaded Photos:
+                        </Typography>
+                        <List dense>
+                          {auditData[section.id][`item_${itemIndex}_photos`].map((photo) => (
+                            <ListItem key={photo.id} sx={{ pl: 0 }}>
+                              <ListItemAvatar>
+                                <Avatar
+                                  src={photo.data}
+                                  variant="rounded"
+                                  sx={{ width: 40, height: 40 }}
+                                />
+                              </ListItemAvatar>
+                              <ListItemText
+                                primary={photo.name}
+                                secondary={new Date(photo.timestamp).toLocaleString()}
+                              />
+                              <ListItemSecondaryAction>
+                                <IconButton
+                                  edge="end"
+                                  aria-label="delete"
+                                  onClick={() => handlePhotoDelete(section.id, itemIndex, photo.id)}
+                                  size="small"
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              </ListItemSecondaryAction>
+                            </ListItem>
+                          ))}
+                        </List>
+                      </Box>
+                    )}
+                  </Box>
                 </CardContent>
               </Card>
             ))}

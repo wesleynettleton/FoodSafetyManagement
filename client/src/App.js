@@ -43,6 +43,7 @@ import ComplianceReportsPage from './pages/ComplianceReportsPage';
 import AuditsPage from './pages/AuditsPage';
 import TakeAuditPage from './pages/TakeAuditPage';
 import ViewAuditsPage from './pages/ViewAuditsPage';
+import AuditDetailsPage from './pages/AuditDetailsPage';
 
 const theme = createTheme({
   palette: {
@@ -325,6 +326,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <ViewAuditsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/admin/audits/details/:auditId"
+              element={
+                <PrivateRoute>
+                  <AuditDetailsPage />
                 </PrivateRoute>
               }
             />

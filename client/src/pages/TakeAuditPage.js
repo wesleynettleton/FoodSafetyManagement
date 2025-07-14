@@ -521,17 +521,19 @@ const TakeAuditPage = () => {
             startIcon={<SendIcon />}
             onClick={handleSubmitAudit}
             size="large"
-            disabled={progress < 100 || !auditData.location || !auditData.auditor || !auditData.auditDate}
+            disabled={!auditData.location || !auditData.auditor || !auditData.auditDate}
           >
             Submit Audit
           </Button>
         </Box>
-        {(progress < 100 || !auditData.location || !auditData.auditor || !auditData.auditDate) && (
+        {(!auditData.location || !auditData.auditor || !auditData.auditDate) && (
           <Alert severity="info" sx={{ mt: 2 }}>
-            {!auditData.location || !auditData.auditor || !auditData.auditDate 
-              ? "Please fill in all required fields (Location, Auditor Name, and Audit Date) and complete all audit items before submitting."
-              : "Please complete all audit items before submitting."
-            }
+            Please fill in all required fields (Location, Auditor Name, and Audit Date) before submitting.
+          </Alert>
+        )}
+        {progress > 0 && progress < 100 && (
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            This audit is {Math.round(progress)}% complete. You can submit it now, but consider completing all items for a more comprehensive audit.
           </Alert>
         )}
       </Paper>

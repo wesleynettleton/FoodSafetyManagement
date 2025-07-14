@@ -49,6 +49,7 @@ import {
   PhotoCamera as PhotoCameraIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
+import { auditsAPI } from '../services/api';
 
 const ViewAuditsPage = () => {
   const navigate = useNavigate();
@@ -71,20 +72,8 @@ const ViewAuditsPage = () => {
         setLoading(true);
         setError('');
         
-        const response = await fetch('http://localhost:5001/api/audits', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-auth-token': localStorage.getItem('token')
-          }
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.msg || 'Failed to fetch audits');
-        }
-
-        const auditData = await response.json();
+        const response = await auditsAPI.getAll();
+        const auditData = response.data;
         
         // Transform API data to match expected format
         const transformedAudits = auditData.map(audit => ({

@@ -161,4 +161,13 @@ export const analyticsAPI = {
   getTemperatureReadingStatus: () => api.get('/analytics/temperature-reading-status')
 };
 
+export const auditsAPI = {
+  getAll: () => api.get('/audits'),
+  getById: (id) => api.get(`/audits/${id}`),
+  create: (auditData) => api.post('/audits', auditData),
+  update: (id, auditData) => api.put(`/audits/${id}`, auditData),
+  delete: (id) => api.delete(`/audits/${id}`),
+  getByLocation: (locationId) => api.get(`/audits/location/${locationId}`)
+};
+
 export default api;

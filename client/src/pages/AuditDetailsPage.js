@@ -35,6 +35,7 @@ import {
   Cancel as CancelIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
+import { auditsAPI } from '../services/api';
 
 const AuditDetailsPage = () => {
   const navigate = useNavigate();
@@ -53,20 +54,8 @@ const AuditDetailsPage = () => {
         setLoading(true);
         setError('');
         
-        const response = await fetch(`http://localhost:5001/api/audits/${auditId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-auth-token': localStorage.getItem('token')
-          }
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.msg || 'Failed to fetch audit');
-        }
-
-        const audit = await response.json();
+        const response = await auditsAPI.getById(auditId);
+        const audit = response.data;
         
         // Transform API data to match expected format
         const transformedData = {

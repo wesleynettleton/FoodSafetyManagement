@@ -44,7 +44,7 @@ import {
   Delete as DeleteIcon,
   Image as ImageIcon
 } from '@mui/icons-material';
-import { locationsAPI } from '../services/api';
+import { locationsAPI, auditsAPI } from '../services/api';
 
 const TakeAuditPage = () => {
   const navigate = useNavigate();
@@ -298,21 +298,8 @@ const TakeAuditPage = () => {
 
 
 
-      const response = await fetch('http://localhost:5001/api/audits', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-auth-token': localStorage.getItem('token')
-        },
-        body: JSON.stringify(auditPayload)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.msg || 'Failed to submit audit');
-      }
-
-      const result = await response.json();
+      const response = await auditsAPI.create(auditPayload);
+      const result = response.data;
       
       // Get location name for display
       const selectedLocation = locations.find(loc => loc._id === auditData.location);

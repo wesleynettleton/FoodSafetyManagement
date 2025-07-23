@@ -315,7 +315,7 @@ const AuditDetailsPage = () => {
                         <Typography variant="caption" color="text.secondary" gutterBottom>
                           Inspector Notes:
                         </Typography>
-                        <Typography variant="body2">
+                        <Typography variant="body2" fontWeight="bold">
                           {notes}
                         </Typography>
                       </Box>

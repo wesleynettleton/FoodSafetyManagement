@@ -111,7 +111,7 @@ const ViewAuditsPage = () => {
         auditor: audit.auditor,
         auditDate: new Date(audit.auditDate).toISOString().split('T')[0],
         status: audit.status,
-        score: audit.score || 0,
+        score: audit.score !== undefined && audit.score !== null ? audit.score : null,
         totalItems: audit.totalItems || 55,
         compliantItems: audit.compliantItems || 0,
         nonCompliantItems: audit.nonCompliantItems || 0,
@@ -210,10 +210,7 @@ const ViewAuditsPage = () => {
     setAuditToDelete(null);
   };
 
-  const calculateProgress = (audit) => {
-    const checkedItems = audit.compliantItems + audit.nonCompliantItems;
-    return audit.totalItems > 0 ? (checkedItems / audit.totalItems) * 100 : 0;
-  };
+
 
   const isAdmin = user?.role === 'admin';
 
@@ -384,7 +381,6 @@ const ViewAuditsPage = () => {
                   <TableCell>Auditor</TableCell>
                   <TableCell>Date</TableCell>
                   <TableCell>Status</TableCell>
-                  <TableCell>Progress</TableCell>
                   <TableCell>Score</TableCell>
                   <TableCell align="center">Actions</TableCell>
                 </TableRow>
@@ -411,12 +407,7 @@ const ViewAuditsPage = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2">
-                        {Math.round(calculateProgress(audit))}%
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      {audit.score ? (
+                      {audit.score !== null && audit.score !== undefined ? (
                         <Typography
                           variant="body2"
                           color={getScoreColor(audit.score)}
@@ -504,7 +495,6 @@ const ViewAuditsPage = () => {
                   <TableCell>Auditor</TableCell>
                   <TableCell>Date</TableCell>
                   <TableCell>Status</TableCell>
-                  <TableCell>Progress</TableCell>
                   <TableCell>Score</TableCell>
                   <TableCell align="center">Actions</TableCell>
                 </TableRow>
@@ -513,7 +503,6 @@ const ViewAuditsPage = () => {
                 {[...Array(5)].map((_, index) => (
                   <TableRow key={index}>
                     {isAdmin && <TableCell><Skeleton /></TableCell>}
-                    <TableCell><Skeleton /></TableCell>
                     <TableCell><Skeleton /></TableCell>
                     <TableCell><Skeleton /></TableCell>
                     <TableCell><Skeleton /></TableCell>

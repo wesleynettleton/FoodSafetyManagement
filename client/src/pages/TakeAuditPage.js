@@ -181,6 +181,11 @@ const TakeAuditPage = () => {
     }));
   };
 
+  // Helper function to get checkbox state
+  const getCheckboxState = (sectionId, itemIndex) => {
+    return auditData[sectionId]?.[`item_${itemIndex}_checked`];
+  };
+
   const handleNotesChange = (sectionId, itemIndex, notes) => {
     setAuditData(prev => ({
       ...prev,
@@ -280,12 +285,15 @@ const TakeAuditPage = () => {
       const sections = auditSections.map(section => ({
         sectionId: section.id,
         sectionTitle: section.title,
-        items: section.items.map((item, index) => ({
-          itemIndex: index,
-          checked: auditData[section.id] ? auditData[section.id][`item_${index}_checked`] : undefined,
-          notes: auditData[section.id] ? auditData[section.id][`item_${index}_notes`] || '' : '',
-          photos: auditData[section.id] ? auditData[section.id][`item_${index}_photos`] || [] : []
-        }))
+        items: section.items.map((item, index) => {
+          const checkedValue = auditData[section.id] ? auditData[section.id][`item_${index}_checked`] : undefined;
+          return {
+            itemIndex: index,
+            checked: checkedValue === undefined ? undefined : checkedValue, // Ensure false is preserved as false, not converted to undefined
+            notes: auditData[section.id] ? auditData[section.id][`item_${index}_notes`] || '' : '',
+            photos: auditData[section.id] ? auditData[section.id][`item_${index}_photos`] || [] : []
+          };
+        })
       }));
 
       const auditPayload = {
@@ -295,8 +303,6 @@ const TakeAuditPage = () => {
         sections: sections,
         status: 'completed'
       };
-
-
 
       const response = await auditsAPI.create(auditPayload);
       const result = response.data;

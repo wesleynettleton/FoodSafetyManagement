@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
@@ -36,7 +36,10 @@ import {
   Badge,
   Avatar,
   ImageList,
-  ImageListItem
+  ImageListItem,
+  Pagination,
+  CircularProgress,
+  Skeleton
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -47,7 +50,8 @@ import {
   Search as SearchIcon,
   FilterList as FilterListIcon,
   Close as CloseIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
 import { auditsAPI } from '../services/api';
 
@@ -62,47 +66,86 @@ const ViewAuditsPage = () => {
   const [auditToDelete, setAuditToDelete] = useState(null);
   const [audits, setAudits] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [error, setError] = useState('');
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalCount: 0,
+    hasNextPage: false,
+    hasPrevPage: false
+  });
+  const [lastFetchTime, setLastFetchTime] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Fetch audits from API
-  useEffect(() => {
-    const fetchAudits = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        
-        const response = await auditsAPI.getAll();
-        const auditData = response.data;
-        
-        // Transform API data to match expected format
-        const transformedAudits = auditData.map(audit => ({
-          id: audit._id,
-          location: audit.location._id,
-          locationName: audit.location.name,
-          auditor: audit.auditor,
-          auditDate: new Date(audit.auditDate).toISOString().split('T')[0],
-          status: audit.status,
-          score: audit.score || 0,
-          totalItems: audit.totalItems || 55,
-          compliantItems: audit.compliantItems || 0,
-          nonCompliantItems: audit.nonCompliantItems || 0,
-          lastUpdated: new Date(audit.updatedAt).toISOString().split('T')[0],
-          sections: audit.sections || {},
-          rawData: audit // Keep original data for detailed view
-        }));
-        
-        setAudits(transformedAudits);
-      } catch (err) {
-        console.error('Error fetching audits:', err);
-        setError(`Failed to load audits: ${err.message}`);
-        setAudits([]);
-      } finally {
-        setLoading(false);
+  // Add CSS for spinning animation
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .spin {
+        animation: spin 1s linear infinite;
       }
-    };
-
-    fetchAudits();
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
   }, []);
+
+  // Fetch audits from API with pagination
+  const fetchAudits = useCallback(async (page = 1, forceRefresh = false) => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      const response = await auditsAPI.getAll(page, 20);
+      const { audits: auditData, pagination: paginationData } = response.data;
+      
+      // Transform API data to match expected format
+      const transformedAudits = auditData.map(audit => ({
+        id: audit._id,
+        location: audit.location._id,
+        locationName: audit.location.name,
+        auditor: audit.auditor,
+        auditDate: new Date(audit.auditDate).toISOString().split('T')[0],
+        status: audit.status,
+        score: audit.score || 0,
+        totalItems: audit.totalItems || 55,
+        compliantItems: audit.compliantItems || 0,
+        nonCompliantItems: audit.nonCompliantItems || 0,
+        lastUpdated: new Date(audit.updatedAt).toISOString().split('T')[0],
+        rawData: audit // Keep original data for detailed view
+      }));
+      
+      setAudits(transformedAudits);
+      setPagination(paginationData);
+      setLastFetchTime(new Date());
+    } catch (err) {
+      console.error('Error fetching audits:', err);
+      setError(`Failed to load audits: ${err.message}`);
+      setAudits([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  // Handle refresh
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchAudits(pagination.currentPage, true);
+  };
+
+  useEffect(() => {
+    fetchAudits(1);
+  }, [fetchAudits]);
+
+  // Handle page change
+  const handlePageChange = (event, newPage) => {
+    fetchAudits(newPage);
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -123,16 +166,12 @@ const ViewAuditsPage = () => {
     return 'error.main';
   };
 
-  // Filter audits based on user role and location
+  // Filter audits based on search term and status
   const filteredAudits = audits.filter(audit => {
     const matchesSearch = audit.locationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          audit.auditor.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || audit.status === statusFilter;
-    
-    // If user is kitchen staff, only show audits for their location
-    const matchesLocation = user?.role === 'admin' || audit.location === user?.siteLocation?._id || audit.location === user?.siteLocation;
-    
-    return matchesSearch && matchesStatus && matchesLocation;
+    return matchesSearch && matchesStatus;
   });
 
   const handleViewAudit = (audit) => {
@@ -152,6 +191,7 @@ const ViewAuditsPage = () => {
 
   const handleDeleteConfirm = async () => {
     try {
+      setDeleteLoading(true);
       await auditsAPI.delete(auditToDelete.id);
       // Remove the deleted audit from the list
       setAudits(audits.filter(audit => audit.id !== auditToDelete.id));
@@ -160,6 +200,8 @@ const ViewAuditsPage = () => {
     } catch (error) {
       console.error('Error deleting audit:', error);
       alert('Failed to delete audit. Please try again.');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -187,21 +229,40 @@ const ViewAuditsPage = () => {
             {isAdmin ? 'View Audits' : `Audit Results - ${user?.location || 'Your Location'}`}
           </Typography>
         </Box>
-        {isAdmin && (
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => navigate('/admin/audits/take')}
-            size="large"
-          >
-            New Audit
-          </Button>
-        )}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Tooltip title="Refresh audits">
+            <IconButton 
+              onClick={handleRefresh} 
+              disabled={refreshing}
+              color="primary"
+            >
+              <RefreshIcon className={refreshing ? 'spin' : ''} />
+            </IconButton>
+          </Tooltip>
+          {isAdmin && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => navigate('/admin/audits/take')}
+              size="large"
+            >
+              New Audit
+            </Button>
+          )}
+        </Box>
       </Box>
+
+      {/* Last updated info */}
+      {lastFetchTime && !loading && (
+        <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+          Last updated: {lastFetchTime.toLocaleTimeString()}
+        </Typography>
+      )}
 
       {/* Loading and Error States */}
       {loading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 4 }}>
+          <CircularProgress size={40} sx={{ mb: 2 }} />
           <Typography>Loading audits...</Typography>
         </Box>
       )}
@@ -313,7 +374,7 @@ const ViewAuditsPage = () => {
       )}
 
       {/* Audits Table */}
-      {filteredAudits.length > 0 && (
+      {!loading && filteredAudits.length > 0 && (
         <Paper sx={{ width: '100%', overflow: 'hidden' }}>
           <TableContainer>
             <Table stickyHeader>
@@ -410,6 +471,54 @@ const ViewAuditsPage = () => {
                         </Tooltip>
                       )}
                     </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          
+          {/* Pagination */}
+          {pagination.totalPages > 1 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+              <Pagination
+                count={pagination.totalPages}
+                page={pagination.currentPage}
+                onChange={handlePageChange}
+                color="primary"
+                showFirstButton
+                showLastButton
+              />
+            </Box>
+          )}
+        </Paper>
+      )}
+
+      {/* Loading skeleton for table */}
+      {loading && (
+        <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  {isAdmin && <TableCell>Location</TableCell>}
+                  <TableCell>Auditor</TableCell>
+                  <TableCell>Date</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Progress</TableCell>
+                  <TableCell>Score</TableCell>
+                  <TableCell align="center">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {[...Array(5)].map((_, index) => (
+                  <TableRow key={index}>
+                    {isAdmin && <TableCell><Skeleton /></TableCell>}
+                    <TableCell><Skeleton /></TableCell>
+                    <TableCell><Skeleton /></TableCell>
+                    <TableCell><Skeleton /></TableCell>
+                    <TableCell><Skeleton /></TableCell>
+                    <TableCell><Skeleton /></TableCell>
+                    <TableCell align="center"><Skeleton /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -541,15 +650,17 @@ const ViewAuditsPage = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel}>
+          <Button onClick={handleDeleteCancel} disabled={deleteLoading}>
             Cancel
           </Button>
           <Button 
             onClick={handleDeleteConfirm} 
             color="error" 
             variant="contained"
+            disabled={deleteLoading}
+            startIcon={deleteLoading ? <CircularProgress size={16} color="inherit" /> : null}
           >
-            Delete
+            {deleteLoading ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>

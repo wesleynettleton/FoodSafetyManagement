@@ -162,7 +162,7 @@ export const analyticsAPI = {
 };
 
 export const auditsAPI = {
-  getAll: () => api.get('/audits'),
+  getAll: (page = 1, limit = 20) => api.get(`/audits?page=${page}&limit=${limit}`),
   getById: (id) => api.get(`/audits/${id}`),
   create: (auditData) => api.post('/audits', auditData),
   update: (id, auditData) => api.put(`/audits/${id}`, auditData),

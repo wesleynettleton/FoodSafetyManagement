@@ -68,13 +68,33 @@ router.get('/', auth, async (req, res) => {
             query.location = user.siteLocation;
         }
 
+        // Get page and limit from query params
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
+        // Get total count for pagination
+        const totalCount = await Audit.countDocuments(query);
+
+        // Get audits with minimal data for list view (exclude photos and detailed sections)
         const audits = await Audit.find(query)
+            .select('location auditor auditDate status totalItems completedItems compliantItems nonCompliantItems score createdAt updatedAt createdBy')
             .populate('location', 'name address')
             .populate('createdBy', 'name')
             .sort({ auditDate: -1 })
-            .limit(100); // Limit to 100 most recent audits
+            .skip(skip)
+            .limit(limit);
 
-        res.json(audits);
+        res.json({
+            audits,
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalCount / limit),
+                totalCount,
+                hasNextPage: page * limit < totalCount,
+                hasPrevPage: page > 1
+            }
+        });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');

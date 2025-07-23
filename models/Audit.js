@@ -79,6 +79,8 @@ auditSchema.pre('save', function(next) {
 auditSchema.index({ auditDate: -1 });
 auditSchema.index({ location: 1, auditDate: -1 });
 auditSchema.index({ status: 1 });
+auditSchema.index({ createdBy: 1, auditDate: -1 });
+auditSchema.index({ location: 1, status: 1, auditDate: -1 });
 
 // Method to calculate compliance statistics
 auditSchema.methods.calculateStats = function() {

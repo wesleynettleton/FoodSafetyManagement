@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const User = require('../models/User');
 const Location = require('../models/Location');
 const Audit = require('../models/Audit');
+const notificationService = require('../services/notificationService');
 
 // @route   POST api/audits
 // @desc    Create a new audit
@@ -49,6 +50,16 @@ router.post('/', [
         // Populate location details for response
         await audit.populate('location', 'name address');
         await audit.populate('createdBy', 'name');
+        
+        // Send notification to kitchen staff at the audited location
+        if (audit.status === 'completed') {
+            try {
+                await notificationService.sendAuditCompletedNotification(audit);
+            } catch (error) {
+                console.error('Error sending audit notification:', error);
+                // Don't fail the audit creation if notification fails
+            }
+        }
         
         res.json(audit);
     } catch (err) {

@@ -139,6 +139,40 @@ router.put('/:id', [
     }
 });
 
+// @route   PUT api/users/fcm-token
+// @desc    Update user's FCM token for push notifications
+// @access  Private
+router.put('/fcm-token', auth, async (req, res) => {
+    try {
+        const { fcmToken, platform = 'android' } = req.body;
+        
+        if (!fcmToken) {
+            return res.status(400).json({ msg: 'FCM token is required' });
+        }
+
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        // Remove existing token for this platform
+        user.fcmTokens = user.fcmTokens.filter(token => token.platform !== platform);
+        
+        // Add new token
+        user.fcmTokens.push({
+            token: fcmToken,
+            platform: platform
+        });
+
+        await user.save();
+        
+        res.json({ msg: 'FCM token updated successfully' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 // @route   DELETE api/users/:id
 // @desc    Delete a user
 // @access  Private (Admin only)

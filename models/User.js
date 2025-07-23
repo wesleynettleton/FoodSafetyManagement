@@ -29,6 +29,19 @@ const userSchema = new mongoose.Schema({
         ref: 'Location',
         required: true
     },
+    // Push notification tokens
+    fcmTokens: [{
+        token: String,
+        platform: {
+            type: String,
+            enum: ['android', 'ios'],
+            default: 'android'
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
+        }
+    }],
     createdAt: {
         type: Date,
         default: Date.now

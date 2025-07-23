@@ -161,7 +161,7 @@ const ViewAuditsPage = () => {
   };
 
   const getScoreColor = (score) => {
-    if (score >= 90) return 'success.main';
+    if (score >= 85) return 'success.main';
     if (score >= 75) return 'warning.main';
     return 'error.main';
   };
@@ -318,10 +318,10 @@ const ViewAuditsPage = () => {
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h4" color="success.main">
-                {filteredAudits.filter(a => a.score >= 90).length}
+                {filteredAudits.filter(a => a.score >= 85).length}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                High Scores (90%+)
+                High Scores (85%+)
               </Typography>
             </CardContent>
           </Card>

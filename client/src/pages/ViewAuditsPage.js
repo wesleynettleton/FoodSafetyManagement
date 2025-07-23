@@ -46,8 +46,8 @@ import {
   Add as AddIcon,
   Search as SearchIcon,
   FilterList as FilterListIcon,
-  PhotoCamera as PhotoCameraIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  Delete as DeleteIcon
 } from '@mui/icons-material';
 import { auditsAPI } from '../services/api';
 
@@ -58,9 +58,8 @@ const ViewAuditsPage = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedAudit, setSelectedAudit] = useState(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState(null);
-  const [auditPhotos, setAuditPhotos] = useState({});
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [auditToDelete, setAuditToDelete] = useState(null);
   const [audits, setAudits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -89,8 +88,6 @@ const ViewAuditsPage = () => {
           nonCompliantItems: audit.nonCompliantItems || 0,
           lastUpdated: new Date(audit.updatedAt).toISOString().split('T')[0],
           sections: audit.sections || {},
-          hasPhotos: false, // Will be calculated when photo functionality is enhanced
-          photoCount: 0, // Will be calculated when photo functionality is enhanced
           rawData: audit // Keep original data for detailed view
         }));
         
@@ -148,24 +145,27 @@ const ViewAuditsPage = () => {
     setSelectedAudit(null);
   };
 
-  const handlePhotoView = (photo) => {
-    setSelectedPhoto(photo);
-    setPhotoViewerOpen(true);
+  const handleDeleteClick = (audit) => {
+    setAuditToDelete(audit);
+    setDeleteDialogOpen(true);
   };
 
-  const handleClosePhotoViewer = () => {
-    setPhotoViewerOpen(false);
-    setSelectedPhoto(null);
+  const handleDeleteConfirm = async () => {
+    try {
+      await auditsAPI.delete(auditToDelete.id);
+      // Remove the deleted audit from the list
+      setAudits(audits.filter(audit => audit.id !== auditToDelete.id));
+      setDeleteDialogOpen(false);
+      setAuditToDelete(null);
+    } catch (error) {
+      console.error('Error deleting audit:', error);
+      alert('Failed to delete audit. Please try again.');
+    }
   };
 
-  const getPhotoCount = (sectionData) => {
-    let totalPhotos = 0;
-    Object.keys(sectionData || {}).forEach(key => {
-      if (key.includes('_photos') && Array.isArray(sectionData[key])) {
-        totalPhotos += sectionData[key].length;
-      }
-    });
-    return totalPhotos;
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setAuditToDelete(null);
   };
 
   const calculateProgress = (audit) => {
@@ -325,7 +325,6 @@ const ViewAuditsPage = () => {
                   <TableCell>Status</TableCell>
                   <TableCell>Progress</TableCell>
                   <TableCell>Score</TableCell>
-                  <TableCell>Photos</TableCell>
                   <TableCell align="center">Actions</TableCell>
                 </TableRow>
               </TableHead>
@@ -370,20 +369,6 @@ const ViewAuditsPage = () => {
                         </Typography>
                       )}
                     </TableCell>
-                    <TableCell>
-                      {audit.hasPhotos ? (
-                        <Chip
-                          icon={<PhotoCameraIcon />}
-                          label={`${audit.photoCount || 0} photos`}
-                          size="small"
-                          color="info"
-                        />
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          No photos
-                        </Typography>
-                      )}
-                    </TableCell>
                     <TableCell align="center">
                       <Tooltip title="View Details">
                         <IconButton
@@ -400,6 +385,17 @@ const ViewAuditsPage = () => {
                             onClick={() => navigate(`/admin/audits/edit/${audit.id}`)}
                           >
                             <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {isAdmin && (
+                        <Tooltip title="Delete Audit">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDeleteClick(audit)}
+                            color="error"
+                          >
+                            <DeleteIcon />
                           </IconButton>
                         </Tooltip>
                       )}
@@ -526,51 +522,38 @@ const ViewAuditsPage = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Photo Viewer Modal */}
+      {/* Delete Confirmation Dialog */}
       <Dialog
-        open={photoViewerOpen}
-        onClose={handleClosePhotoViewer}
-        maxWidth="md"
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        maxWidth="sm"
         fullWidth
-        PaperProps={{
-          sx: { minHeight: '70vh' }
-        }}
       >
         <DialogTitle>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">
-              Photo Evidence
-            </Typography>
-            <IconButton onClick={handleClosePhotoViewer}>
-              <CloseIcon />
-            </IconButton>
-          </Box>
+          Confirm Delete
         </DialogTitle>
         <DialogContent>
-          {selectedPhoto && (
-            <Box sx={{ textAlign: 'center' }}>
-              <img
-                src={selectedPhoto.data}
-                alt={selectedPhoto.name}
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: '60vh',
-                  objectFit: 'contain'
-                }}
-              />
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                {selectedPhoto.name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Uploaded: {new Date(selectedPhoto.timestamp).toLocaleString()}
-              </Typography>
-            </Box>
-          )}
+          <Typography>
+            Are you sure you want to delete the audit for {auditToDelete?.locationName} conducted by {auditToDelete?.auditor} on {auditToDelete?.auditDate ? new Date(auditToDelete.auditDate).toLocaleDateString() : 'unknown date'}?
+          </Typography>
+          <Typography variant="body2" color="error" sx={{ mt: 2 }}>
+            This action cannot be undone.
+          </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClosePhotoViewer}>Close</Button>
+          <Button onClick={handleDeleteCancel}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            color="error" 
+            variant="contained"
+          >
+            Delete
+          </Button>
         </DialogActions>
       </Dialog>
+
     </Container>
   );
 };

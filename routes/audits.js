@@ -30,6 +30,8 @@ router.post('/', [
 
         const { location, auditor, auditDate, sections, status } = req.body;
 
+
+
         const audit = new Audit({
             location,
             auditor,

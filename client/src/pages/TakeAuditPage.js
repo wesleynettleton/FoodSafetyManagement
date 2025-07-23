@@ -19,7 +19,8 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  LinearProgress,
+  RadioGroup,
+  Radio,
   Alert,
   Chip,
   Badge,
@@ -171,20 +172,17 @@ const TakeAuditPage = () => {
     }
   ];
 
-  const handleCheckboxChange = (sectionId, itemIndex, checked) => {
+  const handleRadioChange = (sectionId, itemIndex, value) => {
     setAuditData(prev => ({
       ...prev,
       [sectionId]: {
         ...prev[sectionId],
-        [`item_${itemIndex}_checked`]: checked
+        [`item_${itemIndex}_checked`]: value === 'yes' ? true : value === 'no' ? false : undefined
       }
     }));
   };
 
-  // Helper function to get checkbox state
-  const getCheckboxState = (sectionId, itemIndex) => {
-    return auditData[sectionId]?.[`item_${itemIndex}_checked`];
-  };
+
 
   const handleNotesChange = (sectionId, itemIndex, notes) => {
     setAuditData(prev => ({
@@ -227,7 +225,7 @@ const TakeAuditPage = () => {
 
   const handlePhotoDelete = (sectionId, itemIndex, photoId) => {
     setAuditData(prev => {
-      const currentPhotos = prev[sectionId]?.[`item_${itemIndex}_photos`] || [];
+              const currentPhotos = prev[sectionId]?.[`item_${itemIndex}_photos`] || [];
       const updatedPhotos = currentPhotos.filter(photo => photo.id !== photoId);
       return {
         ...prev,
@@ -239,21 +237,7 @@ const TakeAuditPage = () => {
     });
   };
 
-  const calculateProgress = () => {
-    let totalItems = 0;
-    let completedItems = 0;
 
-    auditSections.forEach(section => {
-      totalItems += section.items.length;
-      section.items.forEach((_, index) => {
-        if (auditData[section.id] && auditData[section.id][`item_${index}_checked`] !== undefined) {
-          completedItems++;
-        }
-      });
-    });
-
-    return totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
-  };
 
   const handleSaveAudit = () => {
     // Validate required fields for draft save
@@ -296,6 +280,8 @@ const TakeAuditPage = () => {
         })
       }));
 
+
+
       const auditPayload = {
         location: auditData.location,
         auditor: auditData.auditor,
@@ -319,7 +305,7 @@ const TakeAuditPage = () => {
     }
   };
 
-  const progress = calculateProgress();
+
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -395,23 +381,7 @@ const TakeAuditPage = () => {
         </Grid>
       </Paper>
 
-      {/* Progress Indicator */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="h6">
-            Audit Progress
-          </Typography>
-          <Chip 
-            label={`${Math.round(progress)}% Complete`} 
-            color={progress === 100 ? 'success' : 'primary'}
-          />
-        </Box>
-        <LinearProgress 
-          variant="determinate" 
-          value={progress} 
-          sx={{ height: 8, borderRadius: 4 }}
-        />
-      </Paper>
+
 
       {/* Audit Sections */}
       {auditSections.map((section, sectionIndex) => (
@@ -434,18 +404,20 @@ const TakeAuditPage = () => {
                     </Typography>
                   </Box>
                   
-                  <Grid container spacing={2} alignItems="center">
+                  <Grid container spacing={2} alignItems="flex-start">
                     <Grid item xs={12} md={3}>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={auditData[section.id]?.[`item_${itemIndex}_checked`] || false}
-                            onChange={(e) => handleCheckboxChange(section.id, itemIndex, e.target.checked)}
-                            color="success"
-                          />
-                        }
-                        label="Yes (Compliant)"
-                      />
+                      <FormControl component="fieldset">
+                        <RadioGroup
+                          value={
+                            auditData[section.id]?.[`item_${itemIndex}_checked`] === true ? 'yes' :
+                            auditData[section.id]?.[`item_${itemIndex}_checked`] === false ? 'no' : ''
+                          }
+                          onChange={(e) => handleRadioChange(section.id, itemIndex, e.target.value)}
+                        >
+                          <FormControlLabel value="yes" control={<Radio color="success" />} label="Yes (Compliant)" />
+                          <FormControlLabel value="no" control={<Radio color="error" />} label="No (Non-compliant)" />
+                        </RadioGroup>
+                      </FormControl>
                     </Grid>
                     <Grid item xs={12} md={9}>
                       <TextField
@@ -565,11 +537,7 @@ const TakeAuditPage = () => {
             Please fill in all required fields (Location, Auditor Name, and Audit Date) before submitting.
           </Alert>
         )}
-        {progress > 0 && progress < 100 && (
-          <Alert severity="warning" sx={{ mt: 2 }}>
-            This audit is {Math.round(progress)}% complete. You can submit it now, but consider completing all items for a more comprehensive audit.
-          </Alert>
-        )}
+
       </Paper>
     </Container>
   );
